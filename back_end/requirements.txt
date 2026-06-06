@@ -3,9 +3,8 @@ sqlmodel
 SQLAlchemy
 alembic
 psycopg2-binary
-passlib
-bcrypt
-python-jose
+passlib[bcrypt]
+python-jose[cryptography]
 python-dotenv
 pydantic-settings
 pytest
