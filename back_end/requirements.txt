@@ -1,0 +1,14 @@
+fastapi[standard]
+sqlmodel
+SQLAlchemy
+alembic
+psycopg2-binary
+passlib
+bcrypt
+python-jose
+python-dotenv
+pydantic-settings
+pytest
+pytest-cov
+httpx
+ruff
