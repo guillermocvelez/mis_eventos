@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserRole(str, Enum):
@@ -11,12 +11,12 @@ class UserRole(str, Enum):
 
 
 class User(BaseModel):
-    id: uuid.UUID
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     email: str
     hashed_password: str
     role: UserRole = UserRole.attendee
     is_active: bool = True
-    created_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     def has_role(self, role: str) -> bool:
         return self.role == role
