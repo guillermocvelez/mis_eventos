@@ -45,10 +45,3 @@ def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
-@router.get("/me", response_model=UserDTO)
-def me(current_user=Depends(get_current_user)):
-    return UserDTO(
-        id=current_user.id,
-        email=current_user.email,
-        role=current_user.role,
-    )
