@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from app.infrastructure.web.routers.auth import router as auth_router
 from app.infrastructure.web.routers.events import router as events_router
+from app.infrastructure.web.routers.sessions import router as sessions_router
 
 
 app = FastAPI(title="Mis Eventos API")
 
 app.include_router(auth_router)
 app.include_router(events_router)
+app.include_router(sessions_router)
+
 
 
 @app.get("/")

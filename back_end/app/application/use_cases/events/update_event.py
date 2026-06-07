@@ -29,6 +29,7 @@ class UpdateEventUseCase:
             name=saved.name,
             description=saved.description,
             date=saved.date,
+            end_date=saved.end_date,
             location=saved.location,
             capacity=saved.capacity,
             registered_count=saved.registered_count,

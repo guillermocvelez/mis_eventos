@@ -20,6 +20,7 @@ class GetEventByIdUseCase:
             name=event.name,
             description=event.description,
             date=event.date,
+            end_date=event.end_date,
             location=event.location,
             capacity=event.capacity,
             registered_count=event.registered_count,

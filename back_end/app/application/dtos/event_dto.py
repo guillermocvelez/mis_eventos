@@ -10,6 +10,7 @@ class EventCreateDTO(BaseModel):
     name: str
     description: Optional[str] = None
     date: datetime
+    end_date: Optional[datetime] = None
     location: Optional[str] = None
     capacity: int
 
@@ -18,6 +19,7 @@ class EventUpdateDTO(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
     location: Optional[str] = None
     capacity: Optional[int] = None
     status: Optional[EventStatus] = None
@@ -27,7 +29,8 @@ class EventDTO(BaseModel):
     id: uuid.UUID
     name: str
     description: Optional[str] = None
-    date: datetime
+    date: datetime   
+    end_date: Optional[datetime] = None
     location: Optional[str] = None
     capacity: int
     registered_count: int

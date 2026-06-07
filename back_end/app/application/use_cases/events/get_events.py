@@ -23,6 +23,7 @@ class GetEventsUseCase:
                     name=e.name,
                     description=e.description,
                     date=e.date,
+                    end_date=e.end_date,
                     location=e.location,
                     capacity=e.capacity,
                     registered_count=e.registered_count,

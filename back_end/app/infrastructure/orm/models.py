@@ -36,6 +36,7 @@ class EventORM(SQLModel, table=True):  # type: ignore[call-arg]
     name: str = Field(max_length=255, index=True)
     description: Optional[str] = None
     date: datetime
+    end_date: Optional[datetime] = Field(default=None)
     location: Optional[str] = Field(default=None, max_length=255)
     capacity: int
     registered_count: int = Field(default=0)

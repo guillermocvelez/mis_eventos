@@ -8,6 +8,7 @@ from app.infrastructure.repositories.registration_repository import SQLModelRegi
 from app.infrastructure.security.password_hasher import BcryptPasswordHasher
 from app.infrastructure.security.token_service import JWTTokenService
 from app.domain.ports.security import IPasswordHasher, ITokenService
+from app.infrastructure.repositories.session_repository import SQLModelSessionRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -60,3 +61,6 @@ def require_role(*roles: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
         return current_user
     return checker
+
+def get_session_repo(db: Session = Depends(get_db_session)):
+    return SQLModelSessionRepository(db)

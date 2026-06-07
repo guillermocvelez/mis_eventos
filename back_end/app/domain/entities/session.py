@@ -16,3 +16,5 @@ class EventSession(BaseModel):
 
     def overlaps_with(self, other: "EventSession") -> bool:
         return self.start_time < other.end_time and self.end_time > other.start_time
+
+    

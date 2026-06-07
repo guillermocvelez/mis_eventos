@@ -12,8 +12,8 @@ class EventNotFound(MisEventosException):
 
 
 class CapacityExceeded(MisEventosException):
-    def __init__(self):
-        super().__init__("El evento no tiene cupos disponibles.")
+    def __init__(self, message: str = "El evento no tiene cupos disponibles."):
+        super().__init__(message)
 
 
 class AlreadyRegistered(MisEventosException):
@@ -22,8 +22,8 @@ class AlreadyRegistered(MisEventosException):
 
 
 class SessionOverlap(MisEventosException):
-    def __init__(self):
-        super().__init__("El horario se solapa con una sesión existente.")
+    def __init__(self, message = "El horario se solapa con una sesión existente."):
+        super().__init__(message)
 
 
 class Unauthorized(MisEventosException):
@@ -33,4 +33,8 @@ class Unauthorized(MisEventosException):
 
 class InvalidEventDate(MisEventosException):
     def __init__(self, message: str = "La fecha del evento debe ser futura."):
+        super().__init__(message)
+
+class SessionOutOfRange(MisEventosException):
+    def __init__(self, message: str = "La sesión está fuera del rango de fechas del evento."):
         super().__init__(message)
