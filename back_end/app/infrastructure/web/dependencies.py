@@ -9,6 +9,10 @@ from app.infrastructure.security.password_hasher import BcryptPasswordHasher
 from app.infrastructure.security.token_service import JWTTokenService
 from app.domain.ports.security import IPasswordHasher, ITokenService
 from app.infrastructure.repositories.session_repository import SQLModelSessionRepository
+from app.infrastructure.repositories.session_registration_repository import SQLModelSessionRegistrationRepository
+from app.infrastructure.repositories.speaker_repository import SQLModelSpeakerRepository
+
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -17,7 +21,6 @@ def get_db_session():
     yield from  get_db()
        
 
-# --- Repositorios ---
 def get_user_repo(db: Session = Depends(get_db_session)):
     return SQLModelUserRepository(db)
 
@@ -27,14 +30,13 @@ def get_event_repo(db: Session = Depends(get_db_session)):
 def get_registration_repo(db: Session = Depends(get_db_session)):
     return SQLModelRegistrationRepository(db)
 
-# --- Servicios de seguridad ---
 def get_password_hasher() -> IPasswordHasher:
     return BcryptPasswordHasher()
 
 def get_token_service() -> ITokenService:
     return JWTTokenService()
 
-# --- Usuario actual ---
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     user_repo=Depends(get_user_repo),
@@ -54,7 +56,6 @@ def get_current_user(
 
     return user
 
-# --- Guard de rol ---
 def require_role(*roles: str):
     def checker(current_user=Depends(get_current_user)):
         if current_user.role not in roles:
@@ -64,3 +65,9 @@ def require_role(*roles: str):
 
 def get_session_repo(db: Session = Depends(get_db_session)):
     return SQLModelSessionRepository(db)
+
+def get_session_registration_repo(db: Session = Depends(get_db_session)):
+    return SQLModelSessionRegistrationRepository(db)
+
+def get_speaker_repo(db: Session = Depends(get_db_session)):
+    return SQLModelSpeakerRepository(db)

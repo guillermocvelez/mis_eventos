@@ -17,8 +17,8 @@ class CapacityExceeded(MisEventosException):
 
 
 class AlreadyRegistered(MisEventosException):
-    def __init__(self):
-        super().__init__("El usuario ya está registrado en este evento.")
+    def __init__(self, message: str = "El usuario ya está registrado en este evento."):
+        super().__init__(message)
 
 
 class SessionOverlap(MisEventosException):
@@ -37,4 +37,8 @@ class InvalidEventDate(MisEventosException):
 
 class SessionOutOfRange(MisEventosException):
     def __init__(self, message: str = "La sesión está fuera del rango de fechas del evento."):
+        super().__init__(message)
+
+class RegistrationNotFound(MisEventosException):
+    def __init__(self, message: str = "El usuario no esta registrado a esta sesión"):
         super().__init__(message)

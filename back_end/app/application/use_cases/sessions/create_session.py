@@ -35,13 +35,16 @@ class CreateSessionUseCase:
         # 4. Cargar sesiones existentes y verificar solapamiento
         existing_sessions = self.session_repo.find_by_event(event_id)
 
+        start_time = dto.start_time.replace(tzinfo=None)
+        end_time = dto.end_time.replace(tzinfo=None)
+
         new_session = EventSession(
             id=uuid.uuid4(),
             event_id=event_id,
             title=dto.title,
-            speaker=dto.speaker,
-            start_time=dto.start_time,
-            end_time=dto.end_time,
+            speaker_id=dto.speaker_id, 
+            start_time=start_time,
+            end_time=end_time,
             capacity=dto.capacity,
         )
 
@@ -62,7 +65,7 @@ class CreateSessionUseCase:
             id=saved.id,
             event_id=saved.event_id,
             title=saved.title,
-            speaker=saved.speaker,
+            speaker_id=saved.speaker_id,
             start_time=saved.start_time,
             end_time=saved.end_time,
             capacity=saved.capacity,

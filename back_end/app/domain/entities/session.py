@@ -8,7 +8,7 @@ class EventSession(BaseModel):
     id: uuid.UUID
     event_id: uuid.UUID
     title: str
-    speaker: Optional[str] = None
+    speaker_id: Optional[uuid.UUID] = None
     start_time: datetime
     end_time: datetime
     capacity: Optional[int] = None

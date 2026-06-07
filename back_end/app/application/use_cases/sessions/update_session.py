@@ -54,7 +54,7 @@ class UpdateSessionUseCase:
             id=saved.id,
             event_id=saved.event_id,
             title=saved.title,
-            speaker=saved.speaker,
+            speaker_id=saved.speaker_id,
             start_time=saved.start_time,
             end_time=saved.end_time,
             capacity=saved.capacity,

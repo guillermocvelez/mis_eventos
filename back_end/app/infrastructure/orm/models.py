@@ -47,11 +47,10 @@ class EventORM(SQLModel, table=True):  # type: ignore[call-arg]
 
 class EventSessionORM(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "event_sessions"
-
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event_id: uuid.UUID = Field(foreign_key="events.id")
     title: str = Field(max_length=255)
-    speaker: Optional[str] = Field(default=None, max_length=255)
+    speaker_id: Optional[uuid.UUID] = Field(default=None, foreign_key="speakers.id")    
     start_time: datetime
     end_time: datetime
     capacity: Optional[int] = None
@@ -68,3 +67,20 @@ class RegistrationORM(SQLModel, table=True):  # type: ignore[call-arg]
     user_id: uuid.UUID = Field(foreign_key="users.id")
     event_id: uuid.UUID = Field(foreign_key="events.id")
     registered_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SessionRegistrationORM(SQLModel, table=True): # type: ignore[call-arg]
+    __tablename__ = "session_registrations"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="users.id")
+    session_id: uuid.UUID = Field(foreign_key="event_sessions.id")
+    registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SpeakerORM(SQLModel, table=True): # type: ignore[call-arg]
+    __tablename__ = "speakers"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str
+    bio: Optional[str] = Field(default=None)
+    email: Optional[str] = Field(default=None)
+
+    

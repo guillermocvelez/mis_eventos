@@ -7,7 +7,7 @@ from app.application.use_cases.sessions.get_sessions import GetSessionsUseCase
 from app.application.use_cases.sessions.update_session import UpdateSessionUseCase
 from app.application.use_cases.sessions.delete_session import DeleteSessionUseCase
 from app.domain.exceptions import EventNotFound, SessionOverlap, InvalidEventDate, CapacityExceeded, Unauthorized
-from app.infrastructure.web.dependencies import get_event_repo, get_session_repo, get_current_user, require_role
+from app.infrastructure.web.dependencies import get_event_repo, get_session_repo, get_current_user, get_speaker_repo, require_role
 
 router = APIRouter(prefix="/events/{event_id}/sessions", tags=["sessions"])
 
@@ -33,10 +33,11 @@ def get_sessions(
     event_id: UUID,
     event_repo=Depends(get_event_repo),
     session_repo=Depends(get_session_repo),
+    speaker_repo=Depends(get_speaker_repo),
     _=Depends(get_current_user),
 ):
     try:
-        return GetSessionsUseCase(event_repo, session_repo).execute(event_id)
+        return GetSessionsUseCase(event_repo, session_repo, speaker_repo).execute(event_id)
     except EventNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

@@ -17,7 +17,7 @@ class SQLModelSessionRepository(ISessionRepository):
             id=orm.id,
             event_id=orm.event_id,
             title=orm.title,
-            speaker=orm.speaker,
+            speaker_id=orm.speaker_id,
             start_time=orm.start_time,
             end_time=orm.end_time,
             capacity=orm.capacity,
@@ -29,7 +29,7 @@ class SQLModelSessionRepository(ISessionRepository):
             id=session.id,
             event_id=session.event_id,
             title=session.title,
-            speaker=session.speaker,
+            speaker_id=session.speaker_id,
             start_time=session.start_time,
             end_time=session.end_time,
             capacity=session.capacity,
@@ -58,7 +58,7 @@ class SQLModelSessionRepository(ISessionRepository):
     def update(self, session: EventSession) -> EventSession:
         orm = self.db.get(EventSessionORM, session.id)
         orm.title = session.title
-        orm.speaker = session.speaker
+        orm.speaker_id = session.speaker_id
         orm.start_time = session.start_time
         orm.end_time = session.end_time
         orm.capacity = session.capacity
