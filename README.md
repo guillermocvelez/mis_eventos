@@ -38,6 +38,12 @@ Aplicar migraciones pendientes:
 docker compose exec backend alembic upgrade head
 ```
 
+Ejecutar el seed de datos iniciales:
+
+```bash
+docker compose exec backend python -m app.infrastructure.db.seed
+```
+
 El proyecto queda con recarga en vivo:
 
 - Los cambios en `front_end/` se reflejan con Vite.
