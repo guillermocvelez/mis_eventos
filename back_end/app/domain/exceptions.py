@@ -32,5 +32,5 @@ class Unauthorized(MisEventosException):
 
 
 class InvalidEventDate(MisEventosException):
-    def __init__(self):
-        super().__init__("La fecha del evento debe ser futura.")
+    def __init__(self, message: str = "La fecha del evento debe ser futura."):
+        super().__init__(message)

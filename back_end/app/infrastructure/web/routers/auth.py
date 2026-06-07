@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.application.use_cases.auth.register_user import RegisterUserUseCase
 from app.application.use_cases.auth.login_user import LoginUserUseCase
 from app.application.dtos.user_dto import TokenDTO, UserDTO
+from app.domain.exceptions import AlreadyRegistered, Unauthorized
 from app.infrastructure.web.dependencies import (
     get_user_repo,
     get_password_hasher,
@@ -26,8 +27,13 @@ def register(
 ):
     try:
         use_case = RegisterUserUseCase(user_repo, password_hasher, token_service)
-        return use_case.execute(body.email, body.password)
-    except ValueError as e:
+        user = use_case.execute(body.email, body.password)
+        token = token_service.create_token({
+            "sub": user.email,
+            "role": user.role,
+        })
+        return TokenDTO(access_token=token)
+    except AlreadyRegistered as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -41,7 +47,6 @@ def login(
     try:
         use_case = LoginUserUseCase(user_repo, password_hasher, token_service)
         return use_case.execute(form.username, form.password)
-    except ValueError as e:
+    except Unauthorized as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-
 

@@ -1,7 +1,9 @@
+import uuid
+
 from pydantic import BaseModel
 
 class UserDTO(BaseModel):
-    id: int
+    id: uuid.UUID
     email: str
     role: str
 
