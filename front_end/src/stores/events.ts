@@ -1,87 +1,20 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { useAuthStore } from '@/stores/auth'
+import {
+  createEvent as createEventRequest,
+  fetchEventDetail as fetchEventDetailRequest,
+  fetchEvents as fetchEventsRequest,
+} from '@/services/eventsApi'
+import type { EventCreatePayload, EventDTO, FetchEventsOptions, SessionDTO } from '@/types/events'
 
-const DEFAULT_API_BASE_URL = 'http://localhost:8000'
-
-export type EventStatus = 'cancelled' | 'draft' | 'finished' | 'published'
-
-export type EventDTO = {
-  id: string
-  name: string
-  description: string | null
-  date: string
-  end_date: string | null
-  location: string | null
-  capacity: number
-  registered_count: number
-  status: EventStatus
-  created_by: string
-  created_at: string
-}
-
-export type EventCreatePayload = {
-  name: string
-  description?: string | null
-  date: string
-  end_date?: string | null
-  location?: string | null
-  capacity: number
-}
-
-export type SpeakerDTO = {
-  id: string
-  name: string
-  bio: string | null
-  email: string | null
-}
-
-export type SessionDTO = {
-  id: string
-  event_id: string
-  title: string
-  speaker: SpeakerDTO | null
-  start_time: string
-  end_time: string
-  capacity: number | null
-  registered_count: number
-}
-
-type PaginatedEventsDTO = {
-  items: EventDTO[]
-  total: number
-  page: number
-  limit: number
-  pages: number
-}
-
-type FetchEventsOptions = {
-  limit?: number
-  page?: number
-  search?: string
-}
-
-function getApiBaseUrl() {
-  return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '')
-}
-
-async function readErrorMessage(response: Response) {
-  const fallback = 'No pudimos cargar los eventos. Inténtalo de nuevo.'
-
-  try {
-    const data: unknown = await response.json()
-
-    if (data && typeof data === 'object' && 'detail' in data) {
-      const detail = (data as { detail: unknown }).detail
-      if (typeof detail === 'string') return detail
-    }
-  } catch {
-    return fallback
-  }
-
-  return fallback
-}
+export type {
+  EventCreatePayload,
+  EventDTO,
+  EventStatus,
+  SessionDTO,
+  SpeakerDTO,
+} from '@/types/events'
 
 export const useEventsStore = defineStore('events', () => {
   const items = ref<EventDTO[]>([])
@@ -99,27 +32,6 @@ export const useEventsStore = defineStore('events', () => {
 
   const hasEvents = computed(() => items.value.length > 0)
 
-  async function fetchWithAuth(path: string, init: RequestInit = {}) {
-    const authStore = useAuthStore()
-    const response = await fetch(`${getApiBaseUrl()}${path}`, {
-      ...init,
-      headers: {
-        Authorization: authStore.authorizationHeader,
-        ...init.headers,
-      },
-    })
-
-    if (response.status === 401) {
-      authStore.logout()
-    }
-
-    if (!response.ok) {
-      throw new Error(await readErrorMessage(response))
-    }
-
-    return response
-  }
-
   async function fetchEvents(options: FetchEventsOptions = {}) {
     isLoading.value = true
     error.value = ''
@@ -127,18 +39,12 @@ export const useEventsStore = defineStore('events', () => {
     const nextPage = options.page ?? page.value
     const nextLimit = options.limit ?? limit.value
     const nextSearch = options.search ?? search.value
-    const params = new URLSearchParams({
-      page: String(nextPage),
-      limit: String(nextLimit),
-    })
-
-    if (nextSearch.trim()) {
-      params.set('search', nextSearch.trim())
-    }
-
     try {
-      const response = await fetchWithAuth(`/events/?${params.toString()}`)
-      const data = (await response.json()) as PaginatedEventsDTO
+      const data = await fetchEventsRequest({
+        limit: nextLimit,
+        page: nextPage,
+        search: nextSearch,
+      })
 
       items.value = data.items
       total.value = data.total
@@ -156,16 +62,7 @@ export const useEventsStore = defineStore('events', () => {
 
   async function createEvent(payload: EventCreatePayload) {
     error.value = ''
-
-    const response = await fetchWithAuth('/events/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
-
-    return (await response.json()) as EventDTO
+    return createEventRequest(payload)
   }
 
   async function fetchEventDetail(eventId: string) {
@@ -175,13 +72,10 @@ export const useEventsStore = defineStore('events', () => {
     sessions.value = []
 
     try {
-      const [eventResponse, sessionsResponse] = await Promise.all([
-        fetchWithAuth(`/events/${eventId}`),
-        fetchWithAuth(`/events/${eventId}/sessions/`),
-      ])
+      const data = await fetchEventDetailRequest(eventId)
 
-      selectedEvent.value = (await eventResponse.json()) as EventDTO
-      sessions.value = (await sessionsResponse.json()) as SessionDTO[]
+      selectedEvent.value = data.event
+      sessions.value = data.sessions
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : ''
       detailError.value = message || 'No pudimos cargar el detalle del evento. Inténtalo de nuevo.'
