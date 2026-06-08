@@ -2,6 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import EventsSidebar from '@/components/events/EventsSidebar.vue'
 import { UiBadge, UiButton, UiIcon } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { type EventDTO, type EventStatus, type SessionDTO, useEventsStore } from '@/stores/events'
@@ -17,12 +18,6 @@ const sessions = computed(() => {
   return [...eventsStore.sessions].sort(
     (left, right) => new Date(left.start_time).getTime() - new Date(right.start_time).getTime(),
   )
-})
-
-const roleLabel = computed(() => {
-  if (authStore.userRole === 'admin') return 'Administrador'
-  if (authStore.userRole === 'organizer') return 'Organizador'
-  return 'Visitante'
 })
 
 const statusLabels: Record<EventStatus, string> = {
@@ -99,44 +94,11 @@ function getSessionCapacity(session: SessionDTO) {
 function getOrganizerLabel(currentEvent: EventDTO) {
   return `Organiza ${currentEvent.created_by.slice(0, 8)}`
 }
-
-async function logout() {
-  authStore.logout()
-  await router.push('/login')
-}
 </script>
 
 <template>
   <div class="me-root events-app">
-    <aside class="events-sidebar">
-      <div class="events-brand">
-        <span class="brand-mark">ME</span>
-        <div>
-          <strong>Mis Eventos</strong>
-          <span>Gestión inteligente</span>
-        </div>
-      </div>
-
-      <nav class="events-nav" aria-label="Principal">
-        <a class="active" href="/eventos">
-          <UiIcon name="ticket" />
-          Principal
-        </a>
-      </nav>
-
-      <div class="events-user-card">
-        <span class="events-avatar">{{
-          authStore.userEmail.slice(0, 1).toUpperCase() || 'U'
-        }}</span>
-        <div>
-          <strong>{{ authStore.userEmail || 'Usuario autenticado' }}</strong>
-          <span>{{ roleLabel }}</span>
-        </div>
-        <button aria-label="Cerrar sesión" class="icon-btn" type="button" @click="logout">
-          <UiIcon name="log-out" />
-        </button>
-      </div>
-    </aside>
+    <EventsSidebar :event-count="eventsStore.total" />
 
     <main class="events-main">
       <section v-if="eventsStore.isDetailLoading" class="events-empty" aria-live="polite">

@@ -2,7 +2,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { UiBadge, UiButton, UiIcon, UiTextInput } from '@/components/ui'
+import EventsEmptyState from '@/components/events/EventsEmptyState.vue'
+import EventsErrorState from '@/components/events/EventsErrorState.vue'
+import EventsGrid from '@/components/events/EventsGrid.vue'
+import EventsLoadingState from '@/components/events/EventsLoadingState.vue'
+import EventsSidebar from '@/components/events/EventsSidebar.vue'
+import EventsToolbar from '@/components/events/EventsToolbar.vue'
+import { UiButton, UiIcon } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { type EventDTO, type EventStatus, useEventsStore } from '@/stores/events'
 
@@ -27,12 +33,6 @@ const eventsStore = useEventsStore()
 const router = useRouter()
 const searchQuery = ref('')
 let searchTimeout: ReturnType<typeof setTimeout> | undefined
-
-const roleLabel = computed(() => {
-  if (authStore.userRole === 'admin') return 'Administrador'
-  if (authStore.userRole === 'organizer') return 'Organizador'
-  return 'Visitante'
-})
 
 const statusLabels: Record<EventStatus, string> = {
   cancelled: 'Cancelado',
@@ -129,43 +129,14 @@ async function clearSearch() {
   await eventsStore.clearSearch()
 }
 
-async function logout() {
-  authStore.logout()
-  await router.push('/login')
+function goToEventDetail(eventId: string) {
+  void router.push({ name: 'event-detail', params: { eventId } })
 }
 </script>
 
 <template>
   <div class="me-root events-app">
-    <aside class="events-sidebar">
-      <div class="events-brand">
-        <span class="brand-mark">ME</span>
-        <div>
-          <strong>Mis Eventos</strong>
-          <span>Gestión inteligente</span>
-        </div>
-      </div>
-
-      <nav class="events-nav" aria-label="Principal">
-        <a class="active" href="/eventos">
-          <UiIcon name="ticket" />
-          Principal
-        </a>
-      </nav>
-
-      <div class="events-user-card">
-        <span class="events-avatar">{{
-          authStore.userEmail.slice(0, 1).toUpperCase() || 'U'
-        }}</span>
-        <div>
-          <strong>{{ authStore.userEmail || 'Usuario autenticado' }}</strong>
-          <span>{{ roleLabel }}</span>
-        </div>
-        <button aria-label="Cerrar sesión" class="icon-btn" type="button" @click="logout">
-          <UiIcon name="log-out" />
-        </button>
-      </div>
-    </aside>
+    <EventsSidebar :event-count="eventsStore.total" />
 
     <main class="events-main">
       <header class="events-topbar">
@@ -182,103 +153,25 @@ async function logout() {
         </UiButton>
       </header>
 
-      <section class="events-toolbar" aria-label="Filtros de eventos">
-        <div class="searchbar">
-          <span class="input-icon lead">
-            <UiIcon name="search" />
-          </span>
-          <UiTextInput
-            v-model="searchQuery"
-            class="has-lead"
-            placeholder="Buscar eventos"
-            type="search"
-          />
-        </div>
-      </section>
+      <EventsToolbar v-model="searchQuery" />
 
-      <section v-if="eventsStore.isLoading" class="events-empty" aria-live="polite">
-        <div class="empty-icon">
-          <UiIcon name="ticket" :size="28" />
-        </div>
-        <h2>Cargando eventos</h2>
-        <p>Estamos consultando los eventos disponibles.</p>
-      </section>
+      <EventsLoadingState v-if="eventsStore.isLoading" />
 
-      <section v-else-if="eventsStore.error" class="events-empty" aria-live="polite">
-        <div class="empty-icon danger">
-          <UiIcon name="ticket" :size="28" />
-        </div>
-        <h2>No pudimos cargar los eventos</h2>
-        <p>{{ eventsStore.error }}</p>
-        <UiButton variant="secondary" @click="eventsStore.fetchEvents({ limit: 6, page: 1 })">
-          Reintentar
-        </UiButton>
-      </section>
+      <EventsErrorState
+        v-else-if="eventsStore.error"
+        :message="eventsStore.error"
+        @retry="eventsStore.fetchEvents({ limit: 6, page: 1 })"
+      />
 
-      <section v-else-if="eventCards.length" class="events-grid" aria-label="Listado de eventos">
-        <article v-for="event in eventCards" :key="event.id" class="event-card">
-          <div class="event-cover" :class="event.coverClass">
-            <span>{{ event.icon }}</span>
-          </div>
+      <EventsGrid
+        v-else-if="eventCards.length"
+        :events="eventCards"
+        :status-labels="statusLabels"
+        :status-variants="statusVariants"
+        @view-detail="goToEventDetail"
+      />
 
-          <div class="event-body">
-            <div class="event-head">
-              <UiBadge :variant="statusVariants[event.status]">
-                {{ statusLabels[event.status] }}
-              </UiBadge>
-            </div>
-
-            <h2>{{ event.title }}</h2>
-
-            <div class="event-meta">
-              <span>
-                <UiIcon name="calendar" :size="15" />
-                {{ event.date }}
-              </span>
-              <span>
-                <UiIcon name="map-pin" :size="15" />
-                {{ event.location }}
-              </span>
-            </div>
-
-            <div class="capacity">
-              <div class="cap-head">
-                <span>Aforo</span>
-                <strong>{{ event.attendees }} / {{ event.capacity }}</strong>
-              </div>
-              <div class="cap-track">
-                <span
-                  class="cap-fill"
-                  :class="event.capacityTone"
-                  :style="{ width: `${event.capacityPercent}%` }"
-                />
-              </div>
-            </div>
-
-            <footer class="event-foot">
-              <button
-                class="btn btn-outline btn-sm"
-                type="button"
-                @click="router.push({ name: 'event-detail', params: { eventId: event.id } })"
-              >
-                Ver detalle
-              </button>
-            </footer>
-          </div>
-        </article>
-      </section>
-
-      <section v-else class="events-empty" aria-live="polite">
-        <div class="empty-icon">
-          <UiIcon name="search" :size="28" />
-        </div>
-        <h2>No encontramos eventos con ese nombre</h2>
-        <p>
-          Prueba con otras palabras clave o limpia los filtros para ver todos los eventos
-          disponibles.
-        </p>
-        <UiButton variant="secondary" @click="clearSearch">Limpiar búsqueda</UiButton>
-      </section>
+      <EventsEmptyState v-else @clear-search="clearSearch" />
 
       <p v-if="eventCards.length && !eventsStore.isLoading" class="events-count">
         Mostrando {{ eventCards.length }} de {{ eventsStore.total }} eventos
