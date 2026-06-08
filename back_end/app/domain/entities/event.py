@@ -6,7 +6,7 @@ from app.domain.entities.session import EventSession
 from pydantic import BaseModel
 
 
-class EventStatus(str, Enum):
+class EventStatus(str, Enum):    
     draft = "draft"
     published = "published"
     cancelled = "cancelled"

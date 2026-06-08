@@ -18,6 +18,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/eventos/crear',
+      name: 'event-create',
+      component: () => import('@/views/events/EventCreateView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresManageEvents: true,
+      },
+    },
+    {
       path: '/eventos/:eventId',
       name: 'event-detail',
       component: () => import('@/views/events/EventDetailView.vue'),
@@ -58,6 +67,10 @@ router.beforeEach((to) => {
         redirect: to.fullPath,
       },
     }
+  }
+
+  if (to.meta.requiresManageEvents && !authStore.canManageEvents) {
+    return '/eventos'
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {

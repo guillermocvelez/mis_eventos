@@ -101,8 +101,8 @@ function getCapacityPercent(event: EventDTO) {
 }
 
 function getCoverClass(status: EventStatus) {
-  if (status === 'draft') return 'cv-draft'
   if (status === 'cancelled') return 'cv-cancelled'
+  if (status === 'draft') return 'cv-draft'
   if (status === 'finished') return 'cv-finished'
 
   return 'cv-published'
@@ -147,7 +147,7 @@ function goToEventDetail(eventId: string) {
           </p>
         </div>
 
-        <UiButton v-if="authStore.canManageEvents" size="lg">
+        <UiButton v-if="authStore.canManageEvents" size="lg" @click="router.push('/eventos/crear')">
           <UiIcon name="plus" />
           Crear evento
         </UiButton>

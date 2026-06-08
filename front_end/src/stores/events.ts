@@ -21,6 +21,15 @@ export type EventDTO = {
   created_at: string
 }
 
+export type EventCreatePayload = {
+  name: string
+  description?: string | null
+  date: string
+  end_date?: string | null
+  location?: string | null
+  capacity: number
+}
+
 export type SpeakerDTO = {
   id: string
   name: string
@@ -90,11 +99,13 @@ export const useEventsStore = defineStore('events', () => {
 
   const hasEvents = computed(() => items.value.length > 0)
 
-  async function fetchWithAuth(path: string) {
+  async function fetchWithAuth(path: string, init: RequestInit = {}) {
     const authStore = useAuthStore()
     const response = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...init,
       headers: {
         Authorization: authStore.authorizationHeader,
+        ...init.headers,
       },
     })
 
@@ -143,6 +154,20 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
+  async function createEvent(payload: EventCreatePayload) {
+    error.value = ''
+
+    const response = await fetchWithAuth('/events/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    return (await response.json()) as EventDTO
+  }
+
   async function fetchEventDetail(eventId: string) {
     isDetailLoading.value = true
     detailError.value = ''
@@ -172,6 +197,7 @@ export const useEventsStore = defineStore('events', () => {
 
   return {
     clearSearch,
+    createEvent,
     detailError,
     error,
     fetchEventDetail,

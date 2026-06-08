@@ -1,5 +1,14 @@
 <script setup lang="ts">
-type InputType = 'email' | 'number' | 'password' | 'search' | 'tel' | 'text' | 'url'
+type InputType =
+  | 'date'
+  | 'datetime-local'
+  | 'email'
+  | 'number'
+  | 'password'
+  | 'search'
+  | 'tel'
+  | 'text'
+  | 'url'
 
 const props = withDefaults(
   defineProps<{

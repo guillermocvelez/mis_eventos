@@ -16,7 +16,7 @@ type EventCard = {
   coverClass: string
   icon: string
   location: string
-  status: EventStatus
+  status?: EventStatus | null
 }
 
 defineProps<{
@@ -38,7 +38,7 @@ const emit = defineEmits<{
       </div>
 
       <div class="event-body">
-        <div class="event-head">
+        <div v-if="event.status" class="event-head">
           <UiBadge :variant="statusVariants[event.status]">
             {{ statusLabels[event.status] }}
           </UiBadge>

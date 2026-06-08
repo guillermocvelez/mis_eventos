@@ -140,7 +140,7 @@ function getOrganizerLabel(currentEvent: EventDTO) {
         <section class="detail-layout">
           <article class="detail-main-card">
             <div class="detail-hero">
-              <UiBadge :variant="statusVariants[event.status]">
+              <UiBadge v-if="event.status" :variant="statusVariants[event.status]">
                 {{ statusLabels[event.status] }}
               </UiBadge>
               <span>{{ event.name.slice(0, 2).toUpperCase() }}</span>

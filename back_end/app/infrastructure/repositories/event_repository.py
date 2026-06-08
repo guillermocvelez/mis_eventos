@@ -18,6 +18,7 @@ class SQLModelEventRepository(IEventRepository):
             name=orm.name,
             description=orm.description,
             date=orm.date,
+            end_date=orm.end_date,
             location=orm.location,
             capacity=orm.capacity,
             registered_count=orm.registered_count,
@@ -32,6 +33,7 @@ class SQLModelEventRepository(IEventRepository):
             name=event.name,
             description=event.description,
             date=event.date,
+            end_date=event.end_date,
             location=event.location,
             capacity=event.capacity,
             registered_count=event.registered_count,
@@ -73,6 +75,7 @@ class SQLModelEventRepository(IEventRepository):
         orm.name = event.name
         orm.description = event.description
         orm.date = event.date
+        orm.end_date = event.end_date
         orm.location = event.location
         orm.capacity = event.capacity
         orm.registered_count = event.registered_count
