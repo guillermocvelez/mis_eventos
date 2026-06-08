@@ -23,6 +23,10 @@ export type EventCreatePayload = {
   capacity: number
 }
 
+export type EventUpdatePayload = Partial<EventCreatePayload> & {
+  status?: EventStatus
+}
+
 export type SpeakerDTO = {
   id: string
   name: string
@@ -39,6 +43,14 @@ export type SessionDTO = {
   end_time: string
   capacity: number | null
   registered_count: number
+}
+
+export type SessionCreatePayload = {
+  title: string
+  speaker_id?: string | null
+  start_time: string
+  end_time: string
+  capacity?: number | null
 }
 
 export type PaginatedEventsDTO = {

@@ -3,9 +3,12 @@ import type {
   EventCreatePayload,
   EventDTO,
   EventDetailDTO,
+  EventUpdatePayload,
   FetchEventsOptions,
   PaginatedEventsDTO,
+  SessionCreatePayload,
   SessionDTO,
+  SpeakerDTO,
 } from '@/types/events'
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8000'
@@ -78,6 +81,18 @@ export async function createEvent(payload: EventCreatePayload) {
   return (await response.json()) as EventDTO
 }
 
+export async function updateEvent(eventId: string, payload: EventUpdatePayload) {
+  const response = await fetchWithAuth(`/events/${eventId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  return (await response.json()) as EventDTO
+}
+
 export async function fetchEventDetail(eventId: string): Promise<EventDetailDTO> {
   const [eventResponse, sessionsResponse] = await Promise.all([
     fetchWithAuth(`/events/${eventId}`),
@@ -88,4 +103,21 @@ export async function fetchEventDetail(eventId: string): Promise<EventDetailDTO>
     event: (await eventResponse.json()) as EventDTO,
     sessions: (await sessionsResponse.json()) as SessionDTO[],
   }
+}
+
+export async function createSession(eventId: string, payload: SessionCreatePayload) {
+  const response = await fetchWithAuth(`/events/${eventId}/sessions/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  return (await response.json()) as SessionDTO
+}
+
+export async function fetchSpeakers() {
+  const response = await fetchWithAuth('/speakers/')
+  return (await response.json()) as SpeakerDTO[]
 }

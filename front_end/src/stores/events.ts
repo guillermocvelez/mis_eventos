@@ -2,16 +2,29 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import {
+  createSession as createSessionRequest,
   createEvent as createEventRequest,
   fetchEventDetail as fetchEventDetailRequest,
   fetchEvents as fetchEventsRequest,
+  fetchSpeakers as fetchSpeakersRequest,
+  updateEvent as updateEventRequest,
 } from '@/services/eventsApi'
-import type { EventCreatePayload, EventDTO, FetchEventsOptions, SessionDTO } from '@/types/events'
+import type {
+  EventCreatePayload,
+  EventDTO,
+  EventUpdatePayload,
+  FetchEventsOptions,
+  SessionCreatePayload,
+  SessionDTO,
+  SpeakerDTO,
+} from '@/types/events'
 
 export type {
   EventCreatePayload,
   EventDTO,
   EventStatus,
+  EventUpdatePayload,
+  SessionCreatePayload,
   SessionDTO,
   SpeakerDTO,
 } from '@/types/events'
@@ -29,6 +42,8 @@ export const useEventsStore = defineStore('events', () => {
   const isDetailLoading = ref(false)
   const error = ref('')
   const detailError = ref('')
+  const speakers = ref<SpeakerDTO[]>([])
+  const speakersError = ref('')
 
   const hasEvents = computed(() => items.value.length > 0)
 
@@ -65,6 +80,37 @@ export const useEventsStore = defineStore('events', () => {
     return createEventRequest(payload)
   }
 
+  async function updateEvent(eventId: string, payload: EventUpdatePayload) {
+    const updatedEvent = await updateEventRequest(eventId, payload)
+
+    if (selectedEvent.value?.id === updatedEvent.id) {
+      selectedEvent.value = updatedEvent
+    }
+
+    items.value = items.value.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
+
+    return updatedEvent
+  }
+
+  async function createSession(eventId: string, payload: SessionCreatePayload) {
+    const createdSession = await createSessionRequest(eventId, payload)
+
+    sessions.value = [...sessions.value, createdSession]
+
+    return createdSession
+  }
+
+  async function fetchSpeakers() {
+    speakersError.value = ''
+
+    try {
+      speakers.value = await fetchSpeakersRequest()
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : ''
+      speakersError.value = message || 'No pudimos cargar los ponentes.'
+    }
+  }
+
   async function fetchEventDetail(eventId: string) {
     isDetailLoading.value = true
     detailError.value = ''
@@ -91,11 +137,13 @@ export const useEventsStore = defineStore('events', () => {
 
   return {
     clearSearch,
+    createSession,
     createEvent,
     detailError,
     error,
     fetchEventDetail,
     fetchEvents,
+    fetchSpeakers,
     hasEvents,
     isDetailLoading,
     isLoading,
@@ -106,6 +154,9 @@ export const useEventsStore = defineStore('events', () => {
     search,
     selectedEvent,
     sessions,
+    speakers,
+    speakersError,
     total,
+    updateEvent,
   }
 })

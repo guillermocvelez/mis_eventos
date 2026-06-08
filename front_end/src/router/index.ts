@@ -27,6 +27,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/eventos/:eventId/editar',
+      name: 'event-edit',
+      component: () => import('@/views/events/EventEditView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresManageEvents: true,
+      },
+    },
+    {
       path: '/eventos/:eventId',
       name: 'event-detail',
       component: () => import('@/views/events/EventDetailView.vue'),

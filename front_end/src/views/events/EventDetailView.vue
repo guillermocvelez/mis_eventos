@@ -1,16 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import EventsSidebar from '@/components/events/EventsSidebar.vue'
+import EventSessionModal from '@/components/events/EventSessionModal.vue'
 import { UiBadge, UiButton, UiIcon } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
-import { type EventDTO, type EventStatus, type SessionDTO, useEventsStore } from '@/stores/events'
+import {
+  type EventDTO,
+  type EventStatus,
+  type SessionCreatePayload,
+  type SessionDTO,
+  useEventsStore,
+} from '@/stores/events'
 
 const authStore = useAuthStore()
 const eventsStore = useEventsStore()
 const route = useRoute()
 const router = useRouter()
+const sessionModalRef = ref<InstanceType<typeof EventSessionModal> | null>(null)
+const isSessionModalOpen = ref(false)
+const isSessionSaving = ref(false)
 
 const eventId = computed(() => String(route.params.eventId || ''))
 const event = computed(() => eventsStore.selectedEvent)
@@ -94,6 +104,30 @@ function getSessionCapacity(session: SessionDTO) {
 function getOrganizerLabel(currentEvent: EventDTO) {
   return `Organiza ${currentEvent.created_by.slice(0, 8)}`
 }
+
+async function openSessionModal() {
+  isSessionModalOpen.value = true
+
+  if (!eventsStore.speakers.length && !eventsStore.speakersError) {
+    await eventsStore.fetchSpeakers()
+  }
+}
+
+async function saveSession(payload: SessionCreatePayload) {
+  isSessionSaving.value = true
+
+  try {
+    await eventsStore.createSession(eventId.value, payload)
+    isSessionModalOpen.value = false
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : ''
+    sessionModalRef.value?.setSubmitError(
+      message || 'No pudimos guardar la sesión. Inténtalo de nuevo.',
+    )
+  } finally {
+    isSessionSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -132,7 +166,11 @@ function getOrganizerLabel(currentEvent: EventDTO) {
           </div>
 
           <div v-if="authStore.canManageEvents" class="detail-actions">
-            <UiButton variant="secondary">Editar evento</UiButton>
+            <UiButton
+              variant="secondary"
+              @click="router.push({ name: 'event-edit', params: { eventId } })"
+              >Editar evento</UiButton
+            >
             <UiButton variant="danger">Eliminar</UiButton>
           </div>
         </header>
@@ -172,7 +210,7 @@ function getOrganizerLabel(currentEvent: EventDTO) {
               <section class="detail-sessions">
                 <div class="detail-section-head">
                   <h2 class="section-title">Sesiones · {{ sessions.length }}</h2>
-                  <UiButton v-if="authStore.canManageEvents" size="sm">
+                  <UiButton v-if="authStore.canManageEvents" size="sm" @click="openSessionModal">
                     <UiIcon name="plus" :size="15" />
                     Agregar sesión
                   </UiButton>
@@ -226,6 +264,17 @@ function getOrganizerLabel(currentEvent: EventDTO) {
             </UiButton>
           </aside>
         </section>
+
+        <EventSessionModal
+          ref="sessionModalRef"
+          :event="event"
+          :open="isSessionModalOpen"
+          :saving="isSessionSaving"
+          :sessions="sessions"
+          :speakers="eventsStore.speakers"
+          @close="isSessionModalOpen = false"
+          @save="saveSession"
+        />
       </template>
     </main>
   </div>

@@ -8,25 +8,10 @@ import EventsGrid from '@/components/events/EventsGrid.vue'
 import EventsLoadingState from '@/components/events/EventsLoadingState.vue'
 import EventsSidebar from '@/components/events/EventsSidebar.vue'
 import EventsToolbar from '@/components/events/EventsToolbar.vue'
+import type { CapacityTone, EventCardItem } from '@/components/events/eventCardTypes'
 import { UiButton, UiIcon } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { type EventDTO, type EventStatus, useEventsStore } from '@/stores/events'
-
-type CapacityTone = 'green' | 'muted' | 'red' | 'yellow'
-
-type EventCard = {
-  id: string
-  title: string
-  date: string
-  attendees: number
-  capacity: number
-  capacityPercent: number
-  capacityTone: CapacityTone
-  coverClass: string
-  icon: string
-  location: string
-  status: EventStatus
-}
 
 const authStore = useAuthStore()
 const eventsStore = useEventsStore()
@@ -108,7 +93,7 @@ function getCoverClass(status: EventStatus) {
   return 'cv-published'
 }
 
-function mapEventToCard(event: EventDTO): EventCard {
+function mapEventToCard(event: EventDTO): EventCardItem {
   return {
     id: event.id,
     title: event.name,
