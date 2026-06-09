@@ -1,10 +1,11 @@
 from uuid import UUID
 from typing import Optional
 from sqlmodel import Session, select
+from app.application.dtos.registration_dto import EventRegistrantDTO
 from app.domain.entities.registration import Registration
 from app.domain.entities.event import Event, EventStatus
 from app.domain.ports.registration_repository import IRegistrationRepository
-from app.infrastructure.orm.models import RegistrationORM, EventORM
+from app.infrastructure.orm.models import RegistrationORM, EventORM, UserORM
 
 
 class SQLModelRegistrationRepository(IRegistrationRepository):
@@ -70,6 +71,25 @@ class SQLModelRegistrationRepository(IRegistrationRepository):
         )
         results = self.db.exec(query).all()
         return [self._event_orm_to_domain(r) for r in results]
+
+    def find_users_by_event(self, event_id: UUID) -> list[EventRegistrantDTO]:
+        query = (
+            select(UserORM, RegistrationORM.registered_at)
+            .join(RegistrationORM, RegistrationORM.user_id == UserORM.id)
+            .where(RegistrationORM.event_id == event_id)
+            .order_by(RegistrationORM.registered_at)
+        )
+        results = self.db.exec(query).all()
+
+        return [
+            EventRegistrantDTO(
+                user_id=user.id,
+                email=user.email,
+                role=user.role.value,
+                registered_at=registered_at,
+            )
+            for user, registered_at in results
+        ]
 
     def delete(self, user_id: UUID, event_id: UUID) -> None:
         query = select(RegistrationORM).where(

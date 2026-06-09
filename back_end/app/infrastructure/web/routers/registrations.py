@@ -2,12 +2,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.application.dtos.registration_dto import RegistrationDTO
+from app.application.dtos.registration_dto import EventRegistrantDTO
 from app.application.dtos.event_dto import EventDTO
 from app.application.use_cases.registrations.register_to_event import RegisterToEventUseCase
 from app.application.use_cases.registrations.cancel_registration import CancelRegistrationUseCase
 from app.application.use_cases.registrations.get_my_registrations import GetMyRegistrationsUseCase
+from app.application.use_cases.registrations.get_event_registrants import GetEventRegistrantsUseCase
 from app.domain.exceptions import EventNotFound, CapacityExceeded, AlreadyRegistered
-from app.infrastructure.web.dependencies import get_event_repo, get_registration_repo, get_current_user
+from app.infrastructure.web.dependencies import (
+    get_event_repo,
+    get_registration_repo,
+    get_current_user,
+    require_role,
+)
 
 router = APIRouter(prefix="/registrations", tags=["registrations"])
 
@@ -50,3 +57,16 @@ def get_my_registrations(
     current_user=Depends(get_current_user),
 ):
     return GetMyRegistrationsUseCase(registration_repo).execute(current_user.id)
+
+
+@router.get("/events/{event_id}/users", response_model=list[EventRegistrantDTO])
+def get_event_registrants(
+    event_id: UUID,
+    event_repo=Depends(get_event_repo),
+    registration_repo=Depends(get_registration_repo),
+    _=Depends(require_role("organizer", "admin")),
+):
+    try:
+        return GetEventRegistrantsUseCase(event_repo, registration_repo).execute(event_id)
+    except EventNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

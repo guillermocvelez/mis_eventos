@@ -3,8 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import EventsSidebar from '@/components/events/EventsSidebar.vue'
+import EventRegistrationPanel from '@/components/events/EventRegistrationPanel.vue'
 import EventSessionModal from '@/components/events/EventSessionModal.vue'
-import { UiBadge, UiButton, UiIcon } from '@/components/ui'
+import EventSessionsSection from '@/components/events/EventSessionsSection.vue'
+import { UiBadge, UiButton, UiIcon, UiModal, UiToast } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import {
   type EventDTO,
@@ -21,9 +23,25 @@ const router = useRouter()
 const sessionModalRef = ref<InstanceType<typeof EventSessionModal> | null>(null)
 const isSessionModalOpen = ref(false)
 const isSessionSaving = ref(false)
+const deletingSessionId = ref('')
+const selectedSession = ref<SessionDTO | null>(null)
+const sessionPendingDeletion = ref<SessionDTO | null>(null)
+const deleteSessionError = ref('')
+const isRegisteringToEvent = ref(false)
+const isCancellingEventRegistration = ref(false)
+const registeringSessionId = ref('')
+const registrationError = ref('')
+const sessionRegistrationError = ref('')
+const toastMessage = ref('')
 
 const eventId = computed(() => String(route.params.eventId || ''))
 const event = computed(() => eventsStore.selectedEvent)
+const isRegistrantsRoute = computed(() => route.name === 'event-registrants')
+const isRegisteredToEvent = computed(() => eventsStore.isRegisteredToEvent(eventId.value))
+const registrationPanelError = computed(
+  () => registrationError.value || eventsStore.myRegistrationsError,
+)
+const canRegisterToSessions = computed(() => isRegisteredToEvent.value)
 const sessions = computed(() => {
   return [...eventsStore.sessions].sort(
     (left, right) => new Date(left.start_time).getTime() - new Date(right.start_time).getTime(),
@@ -44,29 +62,24 @@ const statusVariants: Record<EventStatus, 'danger' | 'info' | 'neutral' | 'succe
   published: 'success',
 }
 
-const registeredPercent = computed(() => {
-  if (!event.value || event.value.capacity <= 0) return 0
-  return Math.min((event.value.registered_count / event.value.capacity) * 100, 100)
-})
-
-const availableSeats = computed(() => {
-  if (!event.value) return 0
-  return Math.max(event.value.capacity - event.value.registered_count, 0)
-})
-
-const isEventFull = computed(() =>
-  Boolean(event.value && event.value.registered_count >= event.value.capacity),
-)
+const roleLabels: Record<string, string> = {
+  admin: 'Administrador',
+  attendee: 'Asistente',
+  organizer: 'Organizador',
+}
 
 onMounted(() => {
-  void eventsStore.fetchEventDetail(eventId.value)
+  void loadEventDetail(eventId.value)
 })
 
-watch(eventId, (nextEventId) => {
-  if (nextEventId) {
-    void eventsStore.fetchEventDetail(nextEventId)
-  }
-})
+watch(
+  () => [eventId.value, route.name] as const,
+  ([nextEventId]) => {
+    if (nextEventId) {
+      void loadEventDetail(nextEventId)
+    }
+  },
+)
 
 watch(
   () => authStore.isAuthenticated,
@@ -87,38 +100,71 @@ function formatEventDate(date: string) {
   }).format(new Date(date))
 }
 
-function formatTimeRange(session: SessionDTO) {
-  const formatter = new Intl.DateTimeFormat('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-  return `${formatter.format(new Date(session.start_time))} - ${formatter.format(new Date(session.end_time))}`
-}
-
-function getSessionCapacity(session: SessionDTO) {
-  if (session.capacity === null) return 'Sin límite'
-  return `${session.registered_count} / ${session.capacity} plazas`
+function getEventEndDateLabel(currentEvent: EventDTO) {
+  if (!currentEvent.end_date) return 'Sin fecha de finalización'
+  return formatEventDate(currentEvent.end_date)
 }
 
 function getOrganizerLabel(currentEvent: EventDTO) {
   return `Organiza ${currentEvent.created_by.slice(0, 8)}`
 }
 
-async function openSessionModal() {
-  isSessionModalOpen.value = true
+function getRoleLabel(role: string) {
+  return roleLabels[role] || role
+}
 
+async function loadEventDetail(nextEventId: string) {
+  registrationError.value = ''
+  sessionRegistrationError.value = ''
+  toastMessage.value = ''
+
+  await Promise.all([
+    eventsStore.fetchEventDetail(nextEventId),
+    eventsStore.fetchMyRegistrations(),
+    eventsStore.fetchMySessionRegistrations(),
+  ])
+
+  if (isRegistrantsRoute.value) {
+    await eventsStore.fetchEventRegistrants(nextEventId)
+  }
+}
+
+async function loadSpeakersIfNeeded() {
   if (!eventsStore.speakers.length && !eventsStore.speakersError) {
     await eventsStore.fetchSpeakers()
   }
+}
+
+async function openCreateSessionModal() {
+  selectedSession.value = null
+  isSessionModalOpen.value = true
+
+  await loadSpeakersIfNeeded()
+}
+
+async function openEditSessionModal(session: SessionDTO) {
+  selectedSession.value = session
+  isSessionModalOpen.value = true
+
+  await loadSpeakersIfNeeded()
+}
+
+function closeSessionModal() {
+  isSessionModalOpen.value = false
+  selectedSession.value = null
 }
 
 async function saveSession(payload: SessionCreatePayload) {
   isSessionSaving.value = true
 
   try {
-    await eventsStore.createSession(eventId.value, payload)
-    isSessionModalOpen.value = false
+    if (selectedSession.value) {
+      await eventsStore.updateSession(eventId.value, selectedSession.value.id, payload)
+    } else {
+      await eventsStore.createSession(eventId.value, payload)
+    }
+
+    closeSessionModal()
   } catch (caughtError) {
     const message = caughtError instanceof Error ? caughtError.message : ''
     sessionModalRef.value?.setSubmitError(
@@ -128,10 +174,106 @@ async function saveSession(payload: SessionCreatePayload) {
     isSessionSaving.value = false
   }
 }
+
+function requestDeleteSession(session: SessionDTO) {
+  sessionPendingDeletion.value = session
+  deleteSessionError.value = ''
+}
+
+function closeDeleteSessionModal() {
+  if (deletingSessionId.value) return
+
+  sessionPendingDeletion.value = null
+  deleteSessionError.value = ''
+}
+
+async function confirmDeleteSession() {
+  if (!sessionPendingDeletion.value) return
+
+  deletingSessionId.value = sessionPendingDeletion.value.id
+  deleteSessionError.value = ''
+
+  try {
+    await eventsStore.deleteSession(eventId.value, sessionPendingDeletion.value.id)
+    sessionPendingDeletion.value = null
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : ''
+    deleteSessionError.value = message || 'No pudimos eliminar la sesión. Inténtalo de nuevo.'
+  } finally {
+    deletingSessionId.value = ''
+  }
+}
+
+async function registerToEvent() {
+  registrationError.value = ''
+  toastMessage.value = ''
+  isRegisteringToEvent.value = true
+
+  try {
+    await eventsStore.registerToEvent(eventId.value)
+    toastMessage.value = 'Te registraste correctamente.'
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : ''
+    if (message.toLowerCase().includes('ya está registrado')) {
+      await eventsStore.fetchMyRegistrations()
+      return
+    }
+
+    registrationError.value = message || 'No pudimos completar tu registro. Inténtalo de nuevo.'
+  } finally {
+    isRegisteringToEvent.value = false
+  }
+}
+
+async function registerToSession(session: SessionDTO) {
+  sessionRegistrationError.value = ''
+  toastMessage.value = ''
+  registeringSessionId.value = session.id
+
+  try {
+    await eventsStore.registerToSession(session.id)
+    toastMessage.value = `Te registraste en ${session.title}.`
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : ''
+    if (message.toLowerCase().includes('ya está registrado')) {
+      await eventsStore.fetchMySessionRegistrations()
+      return
+    }
+
+    sessionRegistrationError.value =
+      message || 'No pudimos completar tu registro a la sesión. Inténtalo de nuevo.'
+  } finally {
+    registeringSessionId.value = ''
+  }
+}
+
+async function cancelEventRegistration() {
+  registrationError.value = ''
+  toastMessage.value = ''
+  isCancellingEventRegistration.value = true
+
+  try {
+    await eventsStore.cancelEventRegistration(eventId.value)
+    toastMessage.value = 'Tu registro fue cancelado.'
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : ''
+    registrationError.value = message || 'No pudimos cancelar tu registro. Inténtalo de nuevo.'
+  } finally {
+    isCancellingEventRegistration.value = false
+  }
+}
 </script>
 
 <template>
   <div class="me-root events-app">
+    <UiToast
+      :duration="4000"
+      :message="toastMessage"
+      :open="Boolean(toastMessage)"
+      variant="success"
+      @close="toastMessage = ''"
+    />
+
     <EventsSidebar :event-count="eventsStore.total" />
 
     <main class="events-main">
@@ -167,6 +309,20 @@ async function saveSession(payload: SessionCreatePayload) {
 
           <div v-if="authStore.canManageEvents" class="detail-actions">
             <UiButton
+              v-if="!isRegistrantsRoute"
+              variant="secondary"
+              @click="router.push({ name: 'event-registrants', params: { eventId } })"
+            >
+              Ver registrados
+            </UiButton>
+            <UiButton
+              v-else
+              variant="secondary"
+              @click="router.push({ name: 'event-detail', params: { eventId } })"
+            >
+              Ver detalle
+            </UiButton>
+            <UiButton
               variant="secondary"
               @click="router.push({ name: 'event-edit', params: { eventId } })"
               >Editar evento</UiButton
@@ -188,7 +344,11 @@ async function saveSession(payload: SessionCreatePayload) {
               <div class="detail-meta">
                 <span>
                   <UiIcon name="calendar" :size="16" />
-                  {{ formatEventDate(event.date) }}
+                  Inicio {{ formatEventDate(event.date) }}
+                </span>
+                <span>
+                  <UiIcon name="calendar" :size="16" />
+                  Fin {{ getEventEndDateLabel(event) }}
                 </span>
                 <span>
                   <UiIcon name="map-pin" :size="16" />
@@ -207,62 +367,79 @@ async function saveSession(payload: SessionCreatePayload) {
                 </p>
               </section>
 
-              <section class="detail-sessions">
+              <section v-if="isRegistrantsRoute" class="registrants-section">
                 <div class="detail-section-head">
-                  <h2 class="section-title">Sesiones · {{ sessions.length }}</h2>
-                  <UiButton v-if="authStore.canManageEvents" size="sm" @click="openSessionModal">
-                    <UiIcon name="plus" :size="15" />
-                    Agregar sesión
-                  </UiButton>
+                  <h2 class="section-title">
+                    Registrados · {{ eventsStore.eventRegistrants.length }}
+                  </h2>
                 </div>
 
-                <div v-if="sessions.length" class="sessions-list">
-                  <article v-for="session in sessions" :key="session.id" class="session-row">
-                    <span class="session-avatar">{{
-                      session.title.slice(0, 1).toUpperCase()
-                    }}</span>
+                <div v-if="eventsStore.isEventRegistrantsLoading" class="sessions-empty">
+                  Cargando usuarios registrados.
+                </div>
+                <p v-else-if="eventsStore.eventRegistrantsError" class="form-alert" role="alert">
+                  {{ eventsStore.eventRegistrantsError }}
+                </p>
+                <div v-else-if="eventsStore.eventRegistrants.length" class="registrants-list">
+                  <article
+                    v-for="registrant in eventsStore.eventRegistrants"
+                    :key="registrant.user_id"
+                    class="registrant-row"
+                  >
+                    <span class="session-avatar">
+                      {{ registrant.email.slice(0, 1).toUpperCase() }}
+                    </span>
                     <div class="session-main">
-                      <strong>{{ session.title }}</strong>
-                      <span>{{ session.speaker?.name || 'Sin ponente asignado' }}</span>
+                      <strong>{{ registrant.email }}</strong>
+                      <span>{{ getRoleLabel(registrant.role) }}</span>
                     </div>
                     <div class="session-side">
-                      <span class="time-pill">{{ formatTimeRange(session) }}</span>
-                      <span>{{ getSessionCapacity(session) }}</span>
+                      <span class="time-pill">
+                        Registro {{ formatEventDate(registrant.registered_at) }}
+                      </span>
                     </div>
                   </article>
                 </div>
-
                 <div v-else class="sessions-empty">
-                  Este evento aún no tiene sesiones publicadas.
+                  Este evento aún no tiene usuarios registrados.
                 </div>
               </section>
+
+              <template v-else>
+                <EventSessionsSection
+                  :can-manage-events="authStore.canManageEvents"
+                  :can-register-to-sessions="canRegisterToSessions"
+                  :checking-session-registrations="eventsStore.isMySessionRegistrationsLoading"
+                  :deleting-session-id="deletingSessionId"
+                  :registered-session-ids="eventsStore.registeredSessionIds"
+                  :registering-session-id="registeringSessionId"
+                  :sessions="sessions"
+                  @add-session="openCreateSessionModal"
+                  @delete-session="requestDeleteSession"
+                  @edit-session="openEditSessionModal"
+                  @register-session="registerToSession"
+                />
+                <p
+                  v-if="sessionRegistrationError || eventsStore.mySessionRegistrationsError"
+                  class="form-alert"
+                  role="alert"
+                >
+                  {{ sessionRegistrationError || eventsStore.mySessionRegistrationsError }}
+                </p>
+              </template>
             </div>
           </article>
 
-          <aside class="registration-panel">
-            <div class="donut" :style="{ '--progress': `${registeredPercent}%` }">
-              <span>{{ availableSeats }}</span>
-            </div>
-            <div>
-              <p class="d-lbl">Disponibles</p>
-              <p class="d-num">{{ availableSeats }} plazas</p>
-            </div>
-
-            <div class="cap-grid">
-              <div>
-                <span>Registrados</span>
-                <strong>{{ event.registered_count }}</strong>
-              </div>
-              <div>
-                <span>Capacidad</span>
-                <strong>{{ event.capacity }}</strong>
-              </div>
-            </div>
-
-            <UiButton block :disabled="isEventFull" size="lg">
-              {{ isEventFull ? 'Evento lleno' : 'Registrarme' }}
-            </UiButton>
-          </aside>
+          <EventRegistrationPanel
+            :cancelling="isCancellingEventRegistration"
+            :checking-registration="eventsStore.isMyRegistrationsLoading"
+            :error="registrationPanelError"
+            :event="event"
+            :is-registered="isRegisteredToEvent"
+            :registering="isRegisteringToEvent"
+            @cancel-registration="cancelEventRegistration"
+            @register="registerToEvent"
+          />
         </section>
 
         <EventSessionModal
@@ -270,11 +447,51 @@ async function saveSession(payload: SessionCreatePayload) {
           :event="event"
           :open="isSessionModalOpen"
           :saving="isSessionSaving"
+          :session="selectedSession"
           :sessions="sessions"
           :speakers="eventsStore.speakers"
-          @close="isSessionModalOpen = false"
+          @close="closeSessionModal"
           @save="saveSession"
         />
+
+        <UiModal :open="Boolean(sessionPendingDeletion)">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Eliminar sesión</h2>
+              <p class="card-description">{{ sessionPendingDeletion?.title }}</p>
+            </div>
+            <UiButton variant="ghost" size="sm" @click="closeDeleteSessionModal">
+              Cancelar
+            </UiButton>
+          </div>
+
+          <div class="card-body">
+            <p v-if="deleteSessionError" class="form-alert" role="alert">
+              {{ deleteSessionError }}
+            </p>
+            <p class="card-description">
+              Esta acción eliminará la sesión del evento. No se puede deshacer.
+            </p>
+          </div>
+
+          <div class="card-footer form-actions">
+            <UiButton
+              variant="ghost"
+              :disabled="Boolean(deletingSessionId)"
+              @click="closeDeleteSessionModal"
+            >
+              Cancelar
+            </UiButton>
+            <UiButton
+              variant="danger"
+              :disabled="Boolean(deletingSessionId)"
+              @click="confirmDeleteSession"
+            >
+              <UiIcon name="trash" :size="16" />
+              {{ deletingSessionId ? 'Eliminando...' : 'Eliminar sesión' }}
+            </UiButton>
+          </div>
+        </UiModal>
       </template>
     </main>
   </div>

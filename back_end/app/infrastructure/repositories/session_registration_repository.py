@@ -53,7 +53,7 @@ class SQLModelSessionRegistrationRepository(ISessionRegistrationRepository):
                 id=r.id,
                 event_id=r.event_id,
                 title=r.title,
-                speaker=r.speaker,
+                speaker_id=r.speaker_id,
                 start_time=r.start_time,
                 end_time=r.end_time,
                 capacity=r.capacity,

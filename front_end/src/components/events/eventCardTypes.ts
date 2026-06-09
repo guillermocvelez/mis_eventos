@@ -7,6 +7,8 @@ export type EventCardItem = {
   id: string
   title: string
   date: string
+  endDate: string
+  timeRange: string
   attendees: number
   capacity: number
   capacityPercent: number

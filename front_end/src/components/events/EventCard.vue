@@ -34,6 +34,14 @@ const emit = defineEmits<{
           <UiIcon name="calendar" :size="15" />
           {{ event.date }}
         </span>
+        <span v-if="event.endDate">
+          <UiIcon name="calendar" :size="15" />
+          {{ event.endDate }}
+        </span>
+        <span>
+          <UiIcon name="clock" :size="15" />
+          {{ event.timeRange }}
+        </span>
         <span>
           <UiIcon name="map-pin" :size="15" />
           {{ event.location }}

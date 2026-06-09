@@ -36,3 +36,6 @@ class Event(BaseModel):
             if self.end_date is None:
                 return session.start_time.date() >= self.date.date()
             return session.start_time.date() >= self.date.date() and session.end_time.date() <= self.end_date.date()
+
+    def can_accept_registrations(self) -> bool:
+        return self.status == EventStatus.published

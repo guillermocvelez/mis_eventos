@@ -103,6 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
   const canManageEvents = computed(() => {
     return userRole.value === 'admin' || userRole.value === 'organizer'
   })
+  const canAdminister = computed(() => userRole.value === 'admin')
   const authorizationHeader = computed(() => {
     if (!token.value) return ''
     return `${tokenType.value} ${token.value}`
@@ -154,6 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     authorizationHeader,
+    canAdminister,
     canManageEvents,
     error,
     isAuthenticated,

@@ -1,6 +1,7 @@
 from uuid import UUID
 from typing import Optional
 
+from app.application.dtos.registration_dto import EventRegistrantDTO
 from app.domain.entities.event import Event
 from app.domain.entities.registration import Registration
 from app.domain.ports.registration_repository import IRegistrationRepository
@@ -37,6 +38,18 @@ class FakeRegistrationRepository(IRegistrationRepository):
             self._events[r.event_id]
             for r in self._registrations
             if r.user_id == user_id and r.event_id in self._events
+        ]
+
+    def find_users_by_event(self, event_id: UUID) -> list[EventRegistrantDTO]:
+        return [
+            EventRegistrantDTO(
+                user_id=registration.user_id,
+                email=f"{registration.user_id}@example.com",
+                role="attendee",
+                registered_at=registration.registered_at,
+            )
+            for registration in self._registrations
+            if registration.event_id == event_id
         ]
 
     def delete(self, user_id: UUID, event_id: UUID) -> None:

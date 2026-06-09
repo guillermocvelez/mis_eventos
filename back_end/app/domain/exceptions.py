@@ -42,3 +42,19 @@ class SessionOutOfRange(MisEventosException):
 class RegistrationNotFound(MisEventosException):
     def __init__(self, message: str = "El usuario no esta registrado a esta sesión"):
         super().__init__(message)
+
+class EventNotOpenForRegistration(MisEventosException):
+    def __init__(self, message: str = "No puedes registrarte a un evento en borrador"):
+        super().__init__(message)
+
+class UserNotFound(MisEventosException):
+    def __init__(self, message: str = "Usuario no encontrado"):
+            super().__init__(message)
+
+class EmailAlreadyExists(MisEventosException):
+    def __init__(self, message: str = "El usuario ya se encuentra registrado"):
+                super().__init__(message)
+
+class CannotDeleteSelf(MisEventosException):
+    def __init__(self, message: str = "El usuario no se puede borrar"):
+        super().__init__(message)

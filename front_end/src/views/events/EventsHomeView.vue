@@ -68,6 +68,20 @@ function formatEventDate(date: string) {
   }).format(new Date(date))
 }
 
+function formatEventTime(date: string) {
+  return new Intl.DateTimeFormat('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(date))
+}
+
+function getEventTimeRange(event: EventDTO) {
+  const startTime = formatEventTime(event.date)
+  if (!event.end_date) return `Inicia ${startTime}`
+
+  return `${startTime} - ${formatEventTime(event.end_date)}`
+}
+
 function getCapacityTone(event: EventDTO): CapacityTone {
   if (event.capacity <= 0) return 'muted'
 
@@ -97,7 +111,9 @@ function mapEventToCard(event: EventDTO): EventCardItem {
   return {
     id: event.id,
     title: event.name,
-    date: formatEventDate(event.date),
+    date: `Inicio ${formatEventDate(event.date)}`,
+    endDate: event.end_date ? `Fin ${formatEventDate(event.end_date)}` : '',
+    timeRange: getEventTimeRange(event),
     location: event.location || 'Sin ubicación',
     attendees: event.registered_count,
     capacity: event.capacity,

@@ -8,3 +8,10 @@ class RegistrationDTO(BaseModel):
     user_id: UUID
     event_id: UUID
     registered_at: datetime
+
+
+class EventRegistrantDTO(BaseModel):
+    user_id: UUID
+    email: str
+    role: str
+    registered_at: datetime

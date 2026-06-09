@@ -1,8 +1,9 @@
 from uuid import uuid4, UUID
 from datetime import datetime, timezone
 
+from app.domain.entities.event import EventStatus
 from app.domain.entities.registration import Registration
-from app.domain.exceptions import CapacityExceeded, AlreadyRegistered, EventNotFound
+from app.domain.exceptions import CapacityExceeded, AlreadyRegistered, EventNotFound, EventNotOpenForRegistration
 from app.domain.ports.event_repository import IEventRepository
 from app.domain.ports.registration_repository import IRegistrationRepository
 
@@ -24,6 +25,9 @@ class RegisterToEventUseCase:
         if existing:
             raise AlreadyRegistered("El usuario ya está registrado en este evento")
 
+        if event.status == EventStatus.draft:
+            raise EventNotOpenForRegistration("No puedes registrarte a un evento en borrador")
+         
         registration = Registration(
             id=uuid4(),
             user_id=user_id,

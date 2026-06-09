@@ -48,7 +48,7 @@ class UpdateSessionUseCase:
                     f"({other.start_time.strftime('%H:%M')} - {other.end_time.strftime('%H:%M')})"
                 )
 
-        saved = self.session_repo.save(updated)
+        saved = self.session_repo.update(updated)
 
         return SessionDTO(
             id=saved.id,

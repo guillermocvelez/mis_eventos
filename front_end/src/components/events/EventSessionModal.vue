@@ -8,6 +8,7 @@ const props = defineProps<{
   event: EventDTO
   open: boolean
   saving?: boolean
+  session?: SessionDTO | null
   sessions: SessionDTO[]
   speakers: SpeakerDTO[]
 }>()
@@ -36,19 +37,26 @@ const canSubmit = computed(() => {
   return Boolean(form.title.trim() && form.startTime && form.endTime && !props.saving)
 })
 
+const isEditing = computed(() => Boolean(props.session))
+const modalTitle = computed(() => (isEditing.value ? 'Editar sesión' : 'Crear sesión'))
+const submitLabel = computed(() => {
+  if (props.saving) return 'Guardando...'
+  return isEditing.value ? 'Guardar cambios' : 'Guardar sesión'
+})
+
 watch(
-  () => props.open,
-  (isOpen) => {
+  () => [props.open, props.session?.id] as const,
+  ([isOpen]) => {
     if (isOpen) resetForm()
   },
 )
 
 function resetForm() {
-  form.title = ''
-  form.speakerId = ''
-  form.startTime = toInputDateTime(props.event.date)
-  form.endTime = ''
-  form.capacity = ''
+  form.title = props.session?.title ?? ''
+  form.speakerId = props.session?.speaker?.id ?? ''
+  form.startTime = toInputDateTime(props.session?.start_time ?? props.event.date)
+  form.endTime = props.session?.end_time ? toInputDateTime(props.session.end_time) : ''
+  form.capacity = props.session?.capacity === null ? '' : String(props.session?.capacity ?? '')
   clearErrors()
 }
 
@@ -75,6 +83,8 @@ function overlapsExistingSession() {
   const nextEnd = new Date(form.endTime).getTime()
 
   return props.sessions.some((session) => {
+    if (session.id === props.session?.id) return false
+
     const currentStart = new Date(session.start_time).getTime()
     const currentEnd = new Date(session.end_time).getTime()
     return nextStart < currentEnd && nextEnd > currentStart
@@ -143,7 +153,7 @@ defineExpose({
     <form @submit.prevent="submitSession">
       <div class="card-header">
         <div>
-          <h2 class="card-title">Crear sesión</h2>
+          <h2 class="card-title">{{ modalTitle }}</h2>
           <p class="card-description">{{ event.name }}</p>
         </div>
         <UiButton variant="ghost" size="sm" @click="emit('close')">Cancelar</UiButton>
@@ -211,8 +221,8 @@ defineExpose({
       <div class="card-footer form-actions">
         <UiButton variant="ghost" @click="emit('close')">Cancelar</UiButton>
         <UiButton :disabled="!canSubmit" type="submit">
-          <UiIcon name="plus" :size="16" />
-          {{ saving ? 'Guardando...' : 'Guardar sesión' }}
+          <UiIcon :name="isEditing ? 'pencil' : 'plus'" :size="16" />
+          {{ submitLabel }}
         </UiButton>
       </div>
     </form>

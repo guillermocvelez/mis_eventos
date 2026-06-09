@@ -44,6 +44,24 @@ const router = createRouter({
       },
     },
     {
+      path: '/eventos/:eventId/registrados',
+      name: 'event-registrants',
+      component: () => import('@/views/events/EventDetailView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresManageEvents: true,
+      },
+    },
+    {
+      path: '/admin',
+      name: 'admin-users',
+      component: () => import('@/views/admin/AdminUsersView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/auth/LoginView.vue'),
@@ -79,6 +97,10 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.requiresManageEvents && !authStore.canManageEvents) {
+    return '/eventos'
+  }
+
+  if (to.meta.requiresAdmin && !authStore.canAdminister) {
     return '/eventos'
   }
 

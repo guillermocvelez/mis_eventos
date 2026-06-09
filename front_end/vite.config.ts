@@ -8,7 +8,9 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
+    vueDevTools({
+      launchEditor: process.env.VUE_DEVTOOLS_EDITOR || process.env.LAUNCH_EDITOR || 'code',
+    }),
   ],
   resolve: {
     alias: {

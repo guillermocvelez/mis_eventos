@@ -3,11 +3,14 @@ import type {
   EventCreatePayload,
   EventDTO,
   EventDetailDTO,
+  EventRegistrantDTO,
   EventUpdatePayload,
   FetchEventsOptions,
   PaginatedEventsDTO,
+  RegistrationDTO,
   SessionCreatePayload,
   SessionDTO,
+  SessionUpdatePayload,
   SpeakerDTO,
 } from '@/types/events'
 
@@ -105,6 +108,43 @@ export async function fetchEventDetail(eventId: string): Promise<EventDetailDTO>
   }
 }
 
+export async function registerToEvent(eventId: string) {
+  const response = await fetchWithAuth(`/registrations/${eventId}`, {
+    method: 'POST',
+  })
+
+  return (await response.json()) as RegistrationDTO
+}
+
+export async function fetchMyRegistrations() {
+  const response = await fetchWithAuth('/registrations/me')
+  return (await response.json()) as EventDTO[]
+}
+
+export async function cancelEventRegistration(eventId: string) {
+  await fetchWithAuth(`/registrations/${eventId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function fetchEventRegistrants(eventId: string) {
+  const response = await fetchWithAuth(`/registrations/events/${eventId}/users`)
+  return (await response.json()) as EventRegistrantDTO[]
+}
+
+export async function registerToSession(sessionId: string) {
+  const response = await fetchWithAuth(`/session-registrations/${sessionId}`, {
+    method: 'POST',
+  })
+
+  return (await response.json()) as RegistrationDTO
+}
+
+export async function fetchMySessionRegistrations() {
+  const response = await fetchWithAuth('/session-registrations/me')
+  return (await response.json()) as SessionDTO[]
+}
+
 export async function createSession(eventId: string, payload: SessionCreatePayload) {
   const response = await fetchWithAuth(`/events/${eventId}/sessions/`, {
     method: 'POST',
@@ -115,6 +155,28 @@ export async function createSession(eventId: string, payload: SessionCreatePaylo
   })
 
   return (await response.json()) as SessionDTO
+}
+
+export async function updateSession(
+  eventId: string,
+  sessionId: string,
+  payload: SessionUpdatePayload,
+) {
+  const response = await fetchWithAuth(`/events/${eventId}/sessions/${sessionId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  return (await response.json()) as SessionDTO
+}
+
+export async function deleteSession(eventId: string, sessionId: string) {
+  await fetchWithAuth(`/events/${eventId}/sessions/${sessionId}`, {
+    method: 'DELETE',
+  })
 }
 
 export async function fetchSpeakers() {

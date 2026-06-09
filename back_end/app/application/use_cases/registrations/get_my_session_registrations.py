@@ -16,7 +16,7 @@ class GetMySessionRegistrationsUseCase:
                 id=s.id,
                 event_id=s.event_id,
                 title=s.title,
-                speaker=s.speaker,
+                speaker_id=s.speaker_id,
                 start_time=s.start_time,
                 end_time=s.end_time,
                 capacity=s.capacity,

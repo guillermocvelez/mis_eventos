@@ -29,6 +29,7 @@ const roleLabel = computed(() => roleLabels[userRole.value])
 const canCreateEvents = computed(() => userRole.value === 'admin' || userRole.value === 'organizer')
 const isAdmin = computed(() => userRole.value === 'admin')
 const isEventsActive = computed(() => route.name === 'events-home' || route.name === 'event-detail')
+const isAdminActive = computed(() => route.name === 'admin-users')
 const avatarTone = computed(() => {
   if (userRole.value === 'admin') return 'purple'
   if (userRole.value === 'organizer') return 'blue'
@@ -82,12 +83,7 @@ async function logout() {
           <span v-if="eventCount > 0" class="events-nav-badge">{{ eventCount }}</span>
         </RouterLink>
 
-        <button
-          v-if="canCreateEvents"
-          aria-disabled="true"
-          class="events-nav-item"
-          type="button"
-        >
+        <button v-if="canCreateEvents" aria-disabled="true" class="events-nav-item" type="button">
           <UiIcon name="circle-plus" />
           <span>Crear evento</span>
         </button>
@@ -102,10 +98,10 @@ async function logout() {
     <div v-if="isAdmin" class="events-nav-group">
       <p class="events-nav-label">Administración</p>
       <nav class="events-nav" aria-label="Administración">
-        <button aria-disabled="true" class="events-nav-item admin" type="button">
+        <RouterLink :class="{ active: isAdminActive }" class="admin" to="/admin">
           <UiIcon name="shield" />
           <span>Admin</span>
-        </button>
+        </RouterLink>
       </nav>
     </div>
 
