@@ -7,6 +7,7 @@ def make_user(**kwargs) -> User:
     defaults = dict(
         id=uuid.uuid4(),
         email="test@misEventos.com",
+        name="Test User",
         hashed_password="hashed_1234",
         role=UserRole.attendee,
         is_active=True,

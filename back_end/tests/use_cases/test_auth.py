@@ -15,38 +15,50 @@ def deps():
     }
 
 
+def register_deps(deps):
+    return {
+        "user_repo": deps["user_repo"],
+        "hasher": deps["hasher"],
+    }
+
+
 
 class TestRegisterUser:
 
     def test_registro_exitoso(self, deps):
-        use_case = RegisterUser(**deps)
-        result = use_case.execute(email="user@test.com", password="1234")
+        use_case = RegisterUser(**register_deps(deps))
+        result = use_case.execute(email="user@test.com", name="User Test", password="1234")
 
         assert isinstance(result, UserDTO)
         assert result.email == "user@test.com"
+        assert result.name == "User Test"
         assert result.role == "attendee"
 
     def test_contrasena_se_hashea(self, deps):
-        use_case = RegisterUser(**deps)
-        use_case.execute(email="user@test.com", password="1234")
+        use_case = RegisterUser(**register_deps(deps))
+        use_case.execute(email="user@test.com", name="User Test", password="1234")
 
         saved = deps["user_repo"].find_by_email("user@test.com")
         assert saved.hashed_password == "hashed:1234"
         assert saved.hashed_password != "1234"
 
     def test_email_duplicado_lanza_excepcion(self, deps):
-        use_case = RegisterUser(**deps)
-        use_case.execute(email="user@test.com", password="1234")
+        use_case = RegisterUser(**register_deps(deps))
+        use_case.execute(email="user@test.com", name="User Test", password="1234")
 
         with pytest.raises(AlreadyRegistered):
-            use_case.execute(email="user@test.com", password="otra")
+            use_case.execute(email="user@test.com", name="User Test", password="otra")
 
 
 
 class TestLoginUser:
 
     def _registrar(self, deps, email="user@test.com", password="1234"):
-        RegisterUser(**deps).execute(email=email, password=password)
+        RegisterUser(**register_deps(deps)).execute(
+            email=email,
+            name="User Test",
+            password=password,
+        )
 
     def test_login_exitoso(self, deps):
         self._registrar(deps)
