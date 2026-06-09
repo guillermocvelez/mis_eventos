@@ -31,6 +31,12 @@ function mountModal(props: Partial<InstanceType<typeof EventSessionModal>['$prop
   })
 }
 
+function toInputDateTime(value: string) {
+  const date = new Date(value)
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+  return date.toISOString().slice(0, 16)
+}
+
 async function fillSessionForm(wrapper: ReturnType<typeof mountModal>) {
   await wrapper.get('#session-title').setValue('  Taller de pruebas  ')
   await wrapper.get('#session-speaker').setValue('speaker-1')
@@ -75,11 +81,13 @@ describe('EventSessionModal', () => {
     })
 
     await wrapper.setProps({ open: true })
+    const overlapStart = toInputDateTime('2026-07-10T15:30:00.000Z')
+    const overlapEnd = toInputDateTime('2026-07-10T15:45:00.000Z')
     await wrapper.get('#session-title').setValue('Solapada')
-    await wrapper.get('#session-start-date').setValue('2026-07-10')
-    await wrapper.findAll('input[type="time"]')[0]!.setValue('10:30')
-    await wrapper.get('#session-end-date').setValue('2026-07-10')
-    await wrapper.findAll('input[type="time"]')[1]!.setValue('11:30')
+    await wrapper.get('#session-start-date').setValue(overlapStart.slice(0, 10))
+    await wrapper.findAll('input[type="time"]')[0]!.setValue(overlapStart.slice(11, 16))
+    await wrapper.get('#session-end-date').setValue(overlapEnd.slice(0, 10))
+    await wrapper.findAll('input[type="time"]')[1]!.setValue(overlapEnd.slice(11, 16))
     await wrapper.get('form').trigger('submit')
 
     expect(wrapper.text()).toContain('Este horario se solapa con otra sesión existente.')
