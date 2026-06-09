@@ -18,6 +18,7 @@ class CreateUserUseCase:
 
         user = User(
             email=dto.email,
+            name=dto.name,
             hashed_password=self.password_hasher.hash(dto.password),
             role=dto.role,
             is_active=dto.is_active,
@@ -28,6 +29,7 @@ class CreateUserUseCase:
         return UserDTO(
             id=saved_user.id,
             email=saved_user.email,
+            name=saved_user.name,
             role=saved_user.role.value,
             is_active=saved_user.is_active,
             created_at=saved_user.created_at,

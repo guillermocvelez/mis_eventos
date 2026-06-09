@@ -3,6 +3,7 @@ export type UserRole = 'admin' | 'attendee' | 'organizer'
 export type UserDTO = {
   id: string
   email: string
+  name:string
   role: UserRole
   is_active: boolean
   created_at: string
@@ -10,6 +11,7 @@ export type UserDTO = {
 
 export type UserCreatePayload = {
   email: string
+  name:string
   password: string
   role: UserRole
   is_active: boolean
@@ -17,6 +19,7 @@ export type UserCreatePayload = {
 
 export type UserUpdatePayload = {
   email?: string
+  name?:string
   password?: string
   role?: UserRole
   is_active?: boolean

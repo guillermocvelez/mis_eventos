@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 class UserDTO(BaseModel):
     id: uuid.UUID
+    name: str
     email: str
     role: str
     is_active: bool
@@ -18,12 +19,14 @@ class TokenDTO(BaseModel):
 
 class UserCreateDTO(BaseModel):
     email: str 
+    name: str
     password: str
     role: Optional[str]
     is_active: bool
 
 class UserUpdateDTO(BaseModel):
     email: Optional[str]
+    name: Optional[str]
     password: Optional[str]
     role: Optional[str]
     is_active: Optional[bool]

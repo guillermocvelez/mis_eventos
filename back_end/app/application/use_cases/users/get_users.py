@@ -31,6 +31,7 @@ class GetUsersUseCase:
                 UserDTO(
                     id=user.id,
                     email=user.email,
+                    name=user.name,
                     role=user.role.value,
                     is_active=user.is_active,
                     created_at=user.created_at,

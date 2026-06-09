@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import Optional
-from sqlmodel import Session, select, col
+from sqlmodel import Session, select, col, or_
 from app.domain.entities.user import User, UserRole
 from app.domain.ports.user_repository import IUserRepository
 from app.infrastructure.orm.models import UserORM
@@ -16,6 +16,7 @@ class SQLModelUserRepository(IUserRepository):
         return User(
             id=orm.id,
             email=orm.email,
+            name=orm.name,
             hashed_password=orm.hashed_password,
             role=UserRole(orm.role),
             is_active=orm.is_active,
@@ -26,6 +27,7 @@ class SQLModelUserRepository(IUserRepository):
         return UserORM(
             id=user.id,
             email=user.email,
+            name=user.name,
             hashed_password=user.hashed_password,
             role=user.role.value,
             is_active=user.is_active,
@@ -47,6 +49,13 @@ class SQLModelUserRepository(IUserRepository):
             return None
         return self._to_domain(orm)
 
+    def find_by_name(self, name: str) -> Optional[User]:
+        query = select(UserORM).where(col(UserORM.name).ilike(f"{name}"))  
+        orm = self.db.exec(query).all()
+        if not orm:
+            return None
+        return self._to_domain(orm)
+
     def find_by_id(self, user_id: UUID) -> Optional[User]:
         orm = self.db.get(UserORM, user_id)
         if not orm:
@@ -64,7 +73,12 @@ class SQLModelUserRepository(IUserRepository):
         query = select(UserORM)
 
         if search:
-            query = query.where(col(UserORM.email).ilike(f"%{search}%"))
+            query = query = query.where(
+            or_(
+                col(UserORM.email).ilike(f"%{search}%"),
+                col(UserORM.name).ilike(f"%{search}%")
+            )
+    )
 
         if role:
             query = query.where(UserORM.role == role.value)
@@ -83,6 +97,7 @@ class SQLModelUserRepository(IUserRepository):
         orm = self.db.get(UserORM, user.id)
 
         orm.email = user.email
+        orm.name = user.name
         orm.hashed_password = user.hashed_password
         orm.role = user.role.value
         orm.is_active = user.is_active

@@ -8,6 +8,7 @@ def seed():
     with Session(engine) as session:
         admin = UserORM(
             email="admin@miseventos.com",
+            name="Admin"
             hashed_password=hasher.hash("admin123"),
             role="admin"
         )

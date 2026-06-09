@@ -9,6 +9,7 @@ import type { UserCreatePayload, UserDTO, UserRole, UserUpdatePayload } from '@/
 type UserStatusFilter = 'active' | 'all' | 'inactive'
 type UserFormState = {
   email: string
+  name: string
   isActive: 'false' | 'true'
   password: string
   role: UserRole
@@ -35,6 +36,7 @@ const toast = reactive({
 })
 const form = reactive<UserFormState>({
   email: '',
+  name: '',
   isActive: 'true',
   password: '',
   role: 'attendee',
@@ -69,7 +71,8 @@ onMounted(() => {
 })
 
 watch([roleFilter, statusFilter], () => {
-  resetPaginationAndLoad()
+  currentPage.value = 1
+  void loadUsers()
 })
 
 watch(currentPage, () => {
@@ -79,18 +82,10 @@ watch(currentPage, () => {
 watch(searchQuery, () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    resetPaginationAndLoad()
+    currentPage.value = 1
+    void loadUsers()
   }, 350)
 })
-
-function resetPaginationAndLoad() {
-  if (currentPage.value === 1) {
-    void loadUsers()
-    return
-  }
-
-  currentPage.value = 1
-}
 
 async function loadUsers() {
   isLoading.value = true
@@ -137,8 +132,8 @@ function getDisplayName(email: string) {
     .join(' ')
 }
 
-function getInitials(email: string) {
-  const source = getDisplayName(email) || email
+function getInitials(name: string) {
+  const source = name
   const parts = source.split(/\s+/).filter(Boolean)
 
   if (parts.length >= 2) {
@@ -234,6 +229,7 @@ async function submitForm() {
     } else {
       const payload: UserCreatePayload = {
         email: form.email.trim(),
+        name: form.name,
         is_active: form.isActive === 'true',
         password: form.password,
         role: form.role,
@@ -387,9 +383,9 @@ function showToast(message: string, variant: 'danger' | 'info' | 'success') {
                 <td>
                   <div class="admin-user-cell">
                     <span class="admin-user-avatar" :class="`role-${user.role}`">
-                      {{ getInitials(user.email) }}
+                      {{ getInitials(user.name) }}
                     </span>
-                    <strong>{{ getDisplayName(user.email) }}</strong>
+                    <strong>{{ user.name }}</strong>
                   </div>
                 </td>
                 <td>
@@ -475,6 +471,15 @@ function showToast(message: string, variant: 'danger' | 'info' | 'success') {
 
           <div class="admin-user-form-body">
             <p v-if="formError" class="form-alert">{{ formError }}</p>
+
+            <UiField for-id="admin-user-name" label="Nombre">
+              <UiTextInput
+                id="admin-user-name"
+                v-model="form.name"
+                placeholder="Nombre de usuario"
+                type="text"
+              />
+            </UiField>
 
             <UiField for-id="admin-user-email" label="Correo">
               <UiTextInput

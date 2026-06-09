@@ -22,6 +22,7 @@ class UserORM(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "users"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(unique=False, index=True, max_length=255, nullable=True)
     email: str = Field(unique=True, index=True, max_length=255)
     hashed_password: str
     role: UserRole = Field(default=UserRole.attendee)

@@ -13,6 +13,7 @@ class UserRole(str, Enum):
 class User(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     email: str
+    name: str
     hashed_password: str
     role: UserRole = UserRole.attendee
     is_active: bool = True

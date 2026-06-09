@@ -27,7 +27,7 @@ class RegisterUserUseCase:
         saved_user = self.user_repo.save(user)
 
         return UserDTO(
-            id=saved_user.id,
+            id=saved_user.id,            
             email=saved_user.email,
             role=saved_user.role.value,
         )
