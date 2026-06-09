@@ -30,10 +30,11 @@ def get_events(
     search: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=10, ge=1, le=100),
+    status: str | None = Query(default=None),
     event_repo=Depends(get_event_repo),
     _=Depends(get_current_user),
 ):
-    return GetEventsUseCase(event_repo).execute(search=search, page=page, limit=limit)
+    return GetEventsUseCase(event_repo).execute(search=search, page=page, limit=limit, status=status)
 
 
 @router.get("/{event_id}", response_model=EventDTO)

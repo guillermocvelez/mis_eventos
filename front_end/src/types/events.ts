@@ -81,6 +81,7 @@ export type FetchEventsOptions = {
   limit?: number
   page?: number
   search?: string
+  status?: EventStatus
 }
 
 export type EventDetailDTO = {

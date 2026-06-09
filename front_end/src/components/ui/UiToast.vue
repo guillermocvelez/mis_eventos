@@ -24,7 +24,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-let closeTimer: ReturnType<typeof window.setTimeout> | undefined
+let closeTimer: number | undefined
 
 watch(
   () => [props.open, props.message, props.duration] as const,

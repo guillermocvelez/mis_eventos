@@ -21,7 +21,9 @@ const emit = defineEmits<{
 const form = reactive({
   title: '',
   speakerId: '',
+  startDate: '',
   startTime: '',
+  endDate: '',
   endTime: '',
   capacity: '',
 })
@@ -34,7 +36,19 @@ const fieldErrors = reactive({
 const submitError = ref('')
 
 const canSubmit = computed(() => {
-  return Boolean(form.title.trim() && form.startTime && form.endTime && !props.saving)
+  return Boolean(
+    form.title.trim() &&
+      form.startDate &&
+      form.startTime &&
+      form.endDate &&
+      form.endTime &&
+      !props.saving,
+  )
+})
+
+const minEndTime = computed(() => {
+  if (form.endDate && form.endDate === form.startDate) return form.startTime
+  return ''
 })
 
 const isEditing = computed(() => Boolean(props.session))
@@ -54,8 +68,15 @@ watch(
 function resetForm() {
   form.title = props.session?.title ?? ''
   form.speakerId = props.session?.speaker?.id ?? ''
-  form.startTime = toInputDateTime(props.session?.start_time ?? props.event.date)
-  form.endTime = props.session?.end_time ? toInputDateTime(props.session.end_time) : ''
+
+  const startDT = toInputDateTime(props.session?.start_time ?? props.event.date)
+  form.startDate = startDT.slice(0, 10)
+  form.startTime = startDT.slice(11, 16)
+
+  const endDT = props.session?.end_time ? toInputDateTime(props.session.end_time) : ''
+  form.endDate = endDT.slice(0, 10)
+  form.endTime = endDT.slice(11, 16)
+
   form.capacity = props.session?.capacity === null ? '' : String(props.session?.capacity ?? '')
   clearErrors()
 }
@@ -78,9 +99,17 @@ function toApiDate(value: string) {
   return new Date(value).toISOString()
 }
 
+function startDatetime() {
+  return form.startDate && form.startTime ? `${form.startDate}T${form.startTime}` : ''
+}
+
+function endDatetime() {
+  return form.endDate && form.endTime ? `${form.endDate}T${form.endTime}` : ''
+}
+
 function overlapsExistingSession() {
-  const nextStart = new Date(form.startTime).getTime()
-  const nextEnd = new Date(form.endTime).getTime()
+  const nextStart = new Date(startDatetime()).getTime()
+  const nextEnd = new Date(endDatetime()).getTime()
 
   return props.sessions.some((session) => {
     if (session.id === props.session?.id) return false
@@ -98,15 +127,17 @@ function validateForm() {
     fieldErrors.title = 'Escribe el título de la sesión.'
   }
 
-  if (!form.startTime) {
-    fieldErrors.startTime = 'Selecciona la hora de inicio.'
+  if (!form.startDate || !form.startTime) {
+    fieldErrors.startTime = 'Selecciona la fecha y hora de inicio.'
   }
 
-  if (!form.endTime) {
-    fieldErrors.endTime = 'Selecciona la hora de finalización.'
+  if (!form.endDate || !form.endTime) {
+    fieldErrors.endTime = 'Selecciona la fecha y hora de finalización.'
   }
 
-  if (form.startTime && form.endTime && new Date(form.endTime) <= new Date(form.startTime)) {
+  const start = startDatetime()
+  const end = endDatetime()
+  if (start && end && new Date(end) <= new Date(start)) {
     fieldErrors.endTime = 'La finalización debe ser posterior al inicio.'
   }
 
@@ -133,8 +164,8 @@ async function submitSession() {
   emit('save', {
     title: form.title.trim(),
     speaker_id: form.speakerId || null,
-    start_time: toApiDate(form.startTime),
-    end_time: toApiDate(form.endTime),
+    start_time: toApiDate(startDatetime()),
+    end_time: toApiDate(endDatetime()),
     capacity: form.capacity ? Number(form.capacity) : null,
   })
 }
@@ -147,6 +178,13 @@ defineExpose({
   setSubmitError,
 })
 </script>
+
+<style scoped>
+:deep(.card-body) {
+  display: grid;
+  gap: var(--space-4);
+}
+</style>
 
 <template>
   <UiModal :open="open">
@@ -162,7 +200,7 @@ defineExpose({
       <div class="card-body">
         <p v-if="submitError" class="form-alert" role="alert">{{ submitError }}</p>
 
-        <div class="event-form-grid">
+        <div class="session-form-grid">
           <UiField label="Título de la sesión" :error="fieldErrors.title" for-id="session-title">
             <UiTextInput
               id="session-title"
@@ -181,23 +219,38 @@ defineExpose({
             </select>
           </UiField>
 
-          <UiField label="Inicio" :error="fieldErrors.startTime" for-id="session-start">
-            <UiTextInput
-              id="session-start"
-              v-model="form.startTime"
-              :invalid="Boolean(fieldErrors.startTime)"
-              type="datetime-local"
-            />
+          <UiField label="Inicio" :error="fieldErrors.startTime" for-id="session-start-date">
+            <div class="date-time-pair">
+              <UiTextInput
+                id="session-start-date"
+                v-model="form.startDate"
+                :invalid="Boolean(fieldErrors.startTime)"
+                type="date"
+              />
+              <UiTextInput
+                v-model="form.startTime"
+                :invalid="Boolean(fieldErrors.startTime)"
+                type="time"
+              />
+            </div>
           </UiField>
 
-          <UiField label="Finalización" :error="fieldErrors.endTime" for-id="session-end">
-            <UiTextInput
-              id="session-end"
-              v-model="form.endTime"
-              :invalid="Boolean(fieldErrors.endTime)"
-              :min="form.startTime"
-              type="datetime-local"
-            />
+          <UiField label="Finalización" :error="fieldErrors.endTime" for-id="session-end-date">
+            <div class="date-time-pair">
+              <UiTextInput
+                id="session-end-date"
+                v-model="form.endDate"
+                :invalid="Boolean(fieldErrors.endTime)"
+                :min="form.startDate"
+                type="date"
+              />
+              <UiTextInput
+                v-model="form.endTime"
+                :invalid="Boolean(fieldErrors.endTime)"
+                :min="minEndTime"
+                type="time"
+              />
+            </div>
           </UiField>
 
           <UiField

@@ -8,6 +8,7 @@ type InputType =
   | 'search'
   | 'tel'
   | 'text'
+  | 'time'
   | 'url'
 
 const props = withDefaults(
@@ -18,6 +19,7 @@ const props = withDefaults(
     placeholder?: string
     invalid?: boolean
     disabled?: boolean
+    min?: string
   }>(),
   {
     modelValue: '',
@@ -26,6 +28,7 @@ const props = withDefaults(
     placeholder: '',
     invalid: false,
     disabled: false,
+    min: undefined,
   },
 )
 
@@ -40,6 +43,7 @@ const emit = defineEmits<{
     :aria-invalid="props.invalid || undefined"
     :disabled="props.disabled"
     :id="props.id"
+    :min="props.min"
     :placeholder="props.placeholder"
     :type="props.type"
     :value="props.modelValue"

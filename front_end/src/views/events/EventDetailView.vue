@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import EventsSidebar from '@/components/events/EventsSidebar.vue'
 import EventRegistrationPanel from '@/components/events/EventRegistrationPanel.vue'
 import EventSessionModal from '@/components/events/EventSessionModal.vue'
 import EventSessionsSection from '@/components/events/EventSessionsSection.vue'
@@ -89,6 +88,14 @@ watch(
     }
   },
 )
+
+function getCoverClass(status: EventStatus) {
+  if (status === 'cancelled') return 'cv-cancelled'
+  if (status === 'draft') return 'cv-draft'
+  if (status === 'finished') return 'cv-finished'
+
+  return 'cv-published'
+}
 
 function formatEventDate(date: string) {
   return new Intl.DateTimeFormat('es-CO', {
@@ -265,7 +272,7 @@ async function cancelEventRegistration() {
 </script>
 
 <template>
-  <div class="me-root events-app">
+  <div class="me-root">
     <UiToast
       :duration="4000"
       :message="toastMessage"
@@ -273,8 +280,6 @@ async function cancelEventRegistration() {
       variant="success"
       @close="toastMessage = ''"
     />
-
-    <EventsSidebar :event-count="eventsStore.total" />
 
     <main class="events-main">
       <section v-if="eventsStore.isDetailLoading" class="events-empty" aria-live="polite">
@@ -333,11 +338,10 @@ async function cancelEventRegistration() {
 
         <section class="detail-layout">
           <article class="detail-main-card">
-            <div class="detail-hero">
+            <div class="detail-hero" :class="getCoverClass(event.status)">
               <UiBadge v-if="event.status" :variant="statusVariants[event.status]">
                 {{ statusLabels[event.status] }}
               </UiBadge>
-              <span>{{ event.name.slice(0, 2).toUpperCase() }}</span>
             </div>
 
             <div class="detail-content">

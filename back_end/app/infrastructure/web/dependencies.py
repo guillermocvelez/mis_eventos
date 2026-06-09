@@ -58,7 +58,8 @@ def get_current_user(
 
 def require_role(*roles: str):
     def checker(current_user=Depends(get_current_user)):
-        if current_user.role not in roles:
+        current_role = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+        if current_role not in roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
         return current_user
     return checker

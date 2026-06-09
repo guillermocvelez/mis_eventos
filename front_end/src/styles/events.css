@@ -1,8 +1,17 @@
-.events-app {
+.app-shell--auth {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);
   min-height: 100vh;
   background: var(--surface-50);
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--surface-50);
+}
+
+.app-shell__content {
+  min-width: 0;
 }
 
 .events-sidebar {
@@ -161,8 +170,8 @@
   min-width: 0;
 }
 
-.events-user-card strong,
-.events-user-card span {
+.events-user-card > div strong,
+.events-user-card > div span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -170,15 +179,37 @@
 
 .events-avatar {
   display: grid;
+  flex: 0 0 36px;
   width: 36px;
   height: 36px;
   place-items: center;
+  margin-top: 0;
   color: var(--white);
   font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
   letter-spacing: 0;
+  line-height: 1;
   background: var(--navy-900);
   border-radius: 999px;
+}
+
+.center-content {
+  place-items: center;
+  margin-top: 0;
+  color: var(--white);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  width: 36px;
+  height: 36px;
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 999px;
+
+}
+
+.center-content  p {
+  text-align: center;
 }
 
 .avatar-blue {
@@ -546,10 +577,9 @@
   justify-content: space-between;
   padding: var(--space-5);
   color: var(--white);
-  background: linear-gradient(135deg, var(--blue), var(--navy));
 }
 
-.detail-hero > span {
+.detail-hero-icon {
   display: grid;
   width: 72px;
   height: 72px;
@@ -810,11 +840,28 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
+  align-items: start;
 }
 
 .event-form-grid .field:nth-child(5),
 .event-form-grid .field:nth-child(6) {
   grid-column: 1 / -1;
+}
+
+.session-form-grid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.date-time-pair {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2);
+}
+
+.date-time-stack {
+  grid-template-columns: 1fr;
 }
 
 .event-textarea {
@@ -1206,7 +1253,7 @@
 }
 
 @media (max-width: 860px) {
-  .events-app {
+  .app-shell--auth {
     grid-template-columns: 1fr;
   }
 

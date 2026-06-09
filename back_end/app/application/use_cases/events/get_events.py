@@ -12,9 +12,12 @@ class GetEventsUseCase:
         search: Optional[str] = None,
         page: int = 1,
         limit: int = 10,
+        status=None
     ) -> PaginatedEventsDTO:
 
-        events, total = self.event_repo.find_all(search=search, page=page, limit=limit)
+        events, total = self.event_repo.find_all(search=search, page=page, limit=limit, status=status)
+
+        print(f"---------Status enviado en usecase: {status}")
 
         return PaginatedEventsDTO(
             items=[

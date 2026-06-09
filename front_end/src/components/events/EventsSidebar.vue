@@ -26,9 +26,9 @@ const roleLabels: Record<UserRole, string> = {
 
 const userRole = computed(() => authStore.userRole || 'attendee')
 const roleLabel = computed(() => roleLabels[userRole.value])
-const canCreateEvents = computed(() => userRole.value === 'admin' || userRole.value === 'organizer')
 const isAdmin = computed(() => userRole.value === 'admin')
 const isEventsActive = computed(() => route.name === 'events-home' || route.name === 'event-detail')
+const isProfileActive = computed(() => route.name === 'profile' || route.name === 'profile-empty')
 const isAdminActive = computed(() => route.name === 'admin-users')
 const avatarTone = computed(() => {
   if (userRole.value === 'admin') return 'purple'
@@ -83,15 +83,10 @@ async function logout() {
           <span v-if="eventCount > 0" class="events-nav-badge">{{ eventCount }}</span>
         </RouterLink>
 
-        <button v-if="canCreateEvents" aria-disabled="true" class="events-nav-item" type="button">
-          <UiIcon name="circle-plus" />
-          <span>Crear evento</span>
-        </button>
-
-        <button aria-disabled="true" class="events-nav-item" type="button">
+        <RouterLink :class="{ active: isProfileActive }" to="/perfil">
           <UiIcon name="user" />
           <span>Mi perfil</span>
-        </button>
+        </RouterLink>
       </nav>
     </div>
 
@@ -106,7 +101,7 @@ async function logout() {
     </div>
 
     <div class="events-user-card">
-      <span class="events-avatar" :class="`avatar-${avatarTone}`">{{ initials }}</span>
+      <span class="center-content" :class="`avatar-${avatarTone}`"><p>{{ initials }}</p></span>
       <div>
         <strong>{{ displayName }}</strong>
         <span>{{ roleLabel }}</span>

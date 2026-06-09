@@ -6,7 +6,6 @@ import EventsEmptyState from '@/components/events/EventsEmptyState.vue'
 import EventsErrorState from '@/components/events/EventsErrorState.vue'
 import EventsGrid from '@/components/events/EventsGrid.vue'
 import EventsLoadingState from '@/components/events/EventsLoadingState.vue'
-import EventsSidebar from '@/components/events/EventsSidebar.vue'
 import EventsToolbar from '@/components/events/EventsToolbar.vue'
 import type { CapacityTone, EventCardItem } from '@/components/events/eventCardTypes'
 import { UiButton, UiIcon } from '@/components/ui'
@@ -35,9 +34,13 @@ const statusVariants: Record<EventStatus, 'danger' | 'info' | 'neutral' | 'succe
 
 const eventCards = computed(() => eventsStore.items.map(mapEventToCard))
 
+const visitorStatusFilter = computed(() =>
+  authStore.canManageEvents ? undefined : ('published' as const),
+)
+
 onMounted(() => {
   searchQuery.value = eventsStore.search
-  void eventsStore.fetchEvents({ limit: 6, page: 1 })
+  void eventsStore.fetchEvents({ limit: 6, page: 1, status: visitorStatusFilter.value })
 })
 
 watch(searchQuery, (nextSearch) => {
@@ -47,6 +50,7 @@ watch(searchQuery, (nextSearch) => {
       limit: eventsStore.limit,
       page: 1,
       search: nextSearch,
+      status: visitorStatusFilter.value,
     })
   }, 350)
 })
@@ -136,9 +140,7 @@ function goToEventDetail(eventId: string) {
 </script>
 
 <template>
-  <div class="me-root events-app">
-    <EventsSidebar :event-count="eventsStore.total" />
-
+  <div class="me-root">
     <main class="events-main">
       <header class="events-topbar">
         <div>

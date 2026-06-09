@@ -17,6 +17,12 @@ type LoginCredentials = {
   password: string
 }
 
+type RegisterCredentials = {
+  name: string
+  email: string
+  password: string
+}
+
 type TokenPayload = {
   exp?: number
   role?: string
@@ -145,6 +151,38 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function register(credentials: RegisterCredentials) {
+    isLoading.value = true
+    error.value = ''
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      })
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response))
+      }
+
+      const data = (await response.json()) as TokenResponse
+
+      token.value = data.access_token
+      tokenType.value = data.token_type || 'bearer'
+      setStoredValue(TOKEN_STORAGE_KEY, token.value)
+      setStoredValue(TOKEN_TYPE_STORAGE_KEY, tokenType.value)
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : ''
+      error.value = message || 'No pudimos crear la cuenta. Revisa tus datos e inténtalo de nuevo.'
+      throw caughtError
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function logout() {
     token.value = ''
     tokenType.value = 'bearer'
@@ -163,6 +201,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     login,
     logout,
+    register,
     token,
     userEmail,
     userRole,

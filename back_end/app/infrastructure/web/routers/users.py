@@ -6,22 +6,42 @@ from app.application.dtos.user_dto import (
     PaginatedUsersDTO,
     UserCreateDTO,
     UserDTO,
-    UserUpdateDTO,
+    UserUpdateDTO,    
+)
+from app.application.dtos.user_profile_dto import (
+    UserProfileDTO
 )
 from app.application.use_cases.users.create_user import CreateUserUseCase
 from app.application.use_cases.users.delete_user import DeleteUserUseCase
 from app.application.use_cases.users.get_user_by_id import GetUserByIdUseCase
 from app.application.use_cases.users.get_users import GetUsersUseCase
 from app.application.use_cases.users.update_user import UpdateUserUseCase
+from app.application.use_cases.users.get_my_profile import GetMyProfileUseCase
 from app.domain.entities.user import UserRole
 from app.domain.exceptions import CannotDeleteSelf, EmailAlreadyExists, UserNotFound
 from app.infrastructure.web.dependencies import (
     get_password_hasher,
     get_user_repo,
     require_role,
+    get_event_repo,
+    get_registration_repo,
+    get_current_user
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("/me", response_model=UserProfileDTO)
+def get_my_profile(
+    user_repo=Depends(get_user_repo),
+    event_repo=Depends(get_event_repo),
+    registration_repo=Depends(get_registration_repo),
+    current_user=Depends(get_current_user),
+):
+    try:
+        return GetMyProfileUseCase(user_repo, event_repo, registration_repo).execute(current_user)
+    except UserNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get("/", response_model=PaginatedUsersDTO)
@@ -96,3 +116,4 @@ def delete_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CannotDeleteSelf as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    

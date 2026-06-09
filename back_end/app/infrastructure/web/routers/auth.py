@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.application.use_cases.auth.register_user import RegisterUserUseCase
 from app.application.use_cases.auth.login_user import LoginUserUseCase
-from app.application.dtos.user_dto import TokenDTO, UserDTO
+from app.application.dtos.user_dto import TokenDTO
 from app.domain.exceptions import AlreadyRegistered, Unauthorized
 from app.infrastructure.web.dependencies import (
     get_user_repo,
@@ -15,6 +15,7 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 class RegisterRequest(BaseModel):
+    name: str
     email: str
     password: str
 
@@ -26,8 +27,8 @@ def register(
     token_service=Depends(get_token_service),
 ):
     try:
-        use_case = RegisterUserUseCase(user_repo, password_hasher, token_service)
-        user = use_case.execute(body.email, body.password)
+        use_case = RegisterUserUseCase(user_repo, password_hasher)
+        user = use_case.execute(body.email, body.name, body.password)
         token = token_service.create_token({
             "sub": user.email,
             "role": user.role,
@@ -49,4 +50,3 @@ def login(
         return use_case.execute(form.username, form.password)
     except Unauthorized as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-

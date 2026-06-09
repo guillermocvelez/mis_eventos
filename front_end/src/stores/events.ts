@@ -82,6 +82,7 @@ export const useEventsStore = defineStore('events', () => {
         limit: nextLimit,
         page: nextPage,
         search: nextSearch,
+        status: options.status,
       })
 
       items.value = data.items

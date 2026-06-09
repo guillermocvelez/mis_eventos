@@ -2,7 +2,6 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import EventsSidebar from '@/components/events/EventsSidebar.vue'
 import { UiButton, UiField, UiIcon, UiTextInput } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { useEventsStore } from '@/stores/events'
@@ -14,8 +13,10 @@ const router = useRouter()
 const form = reactive({
   name: '',
   description: '',
-  date: '',
+  startDate: '',
+  startTime: '',
   endDate: '',
+  endTime: '',
   location: '',
   capacity: '50',
 })
@@ -28,22 +29,47 @@ const fieldErrors = reactive({
 const submitError = ref('')
 const isSubmitting = ref(false)
 
-const canSubmit = computed(() => {
-  return Boolean(form.name.trim() && form.date && Number(form.capacity) > 0 && !isSubmitting.value)
+const startDatetime = computed(() => {
+  if (!form.startDate || !form.startTime) return ''
+  return `${form.startDate}T${form.startTime}`
 })
 
-const startsAtLabel = computed(() => formatPreviewDate(form.date))
-const endsAtLabel = computed(() => formatPreviewDate(form.endDate))
+const endDatetime = computed(() => {
+  if (!form.endDate) return ''
+  return `${form.endDate}T${form.endTime || '23:59'}`
+})
+
+const canSubmit = computed(() => {
+  return Boolean(
+    form.name.trim() &&
+      form.startDate &&
+      form.startTime &&
+      Number(form.capacity) > 0 &&
+      !isSubmitting.value,
+  )
+})
+
+const startsAtLabel = computed(() => formatPreviewDate(startDatetime.value))
+const endsAtLabel = computed(() => formatPreviewDate(endDatetime.value))
 const capacityLabel = computed(() => {
   const capacity = Number(form.capacity)
   if (!capacity || capacity <= 0) return 'Sin cupo definido'
   return `${capacity} plazas disponibles`
 })
 
-const minDateTime = computed(() => {
+const minDate = computed(() => new Date().toISOString().slice(0, 10))
+
+const minStartTime = computed(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  if (form.startDate !== today) return ''
   const now = new Date()
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset() + 5)
-  return now.toISOString().slice(0, 16)
+  return now.toISOString().slice(11, 16)
+})
+
+const minEndTime = computed(() => {
+  if (form.endDate && form.endDate === form.startDate) return form.startTime
+  return ''
 })
 
 watch(
@@ -88,18 +114,16 @@ function validateForm() {
     fieldErrors.name = 'Escribe el nombre del evento.'
   }
 
-  if (!form.date) {
+  if (!form.startDate || !form.startTime) {
     fieldErrors.date = 'Selecciona la fecha y hora de inicio.'
-  } else if (new Date(form.date).getTime() <= Date.now()) {
+  } else if (new Date(startDatetime.value).getTime() <= Date.now()) {
     fieldErrors.date = 'La fecha de inicio debe ser futura.'
   }
 
-  if (
-    form.endDate &&
-    form.date &&
-    new Date(form.endDate).getTime() < new Date(form.date).getTime()
-  ) {
-    fieldErrors.endDate = 'La finalización debe ser posterior al inicio.'
+  if (form.endDate && startDatetime.value) {
+    if (new Date(endDatetime.value).getTime() < new Date(startDatetime.value).getTime()) {
+      fieldErrors.endDate = 'La finalización debe ser posterior al inicio.'
+    }
   }
 
   const capacity = Number(form.capacity)
@@ -119,8 +143,8 @@ async function submitEvent() {
     const createdEvent = await eventsStore.createEvent({
       name: form.name.trim(),
       description: form.description.trim() || null,
-      date: toApiDate(form.date) || '',
-      end_date: toApiDate(form.endDate),
+      date: toApiDate(startDatetime.value) || '',
+      end_date: toApiDate(endDatetime.value),
       location: form.location.trim() || null,
       capacity: Number(form.capacity),
     })
@@ -136,9 +160,7 @@ async function submitEvent() {
 </script>
 
 <template>
-  <div class="me-root events-app">
-    <EventsSidebar :event-count="eventsStore.total" />
-
+  <div class="me-root">
     <main class="events-main create-event-page">
       <header class="detail-topbar">
         <div>
@@ -182,29 +204,44 @@ async function submitEvent() {
               />
             </UiField>
 
-            <UiField label="Fecha y hora de inicio" :error="fieldErrors.date" for-id="event-date">
-              <UiTextInput
-                id="event-date"
-                v-model="form.date"
-                :invalid="Boolean(fieldErrors.date)"
-                :min="minDateTime"
-                type="datetime-local"
-              />
+            <UiField label="Fecha y hora de inicio" :error="fieldErrors.date" for-id="event-start-date">
+              <div class="date-time-pair">
+                <UiTextInput
+                  id="event-start-date"
+                  v-model="form.startDate"
+                  :invalid="Boolean(fieldErrors.date)"
+                  :min="minDate"
+                  type="date"
+                />
+                <UiTextInput
+                  v-model="form.startTime"
+                  :invalid="Boolean(fieldErrors.date)"
+                  :min="minStartTime"
+                  type="time"
+                />
+              </div>
             </UiField>
 
             <UiField
               label="Fecha y hora de finalización"
               :error="fieldErrors.endDate"
               for-id="event-end-date"
-              hint="Opcional si el evento termina el mismo día."
             >
-              <UiTextInput
-                id="event-end-date"
-                v-model="form.endDate"
-                :invalid="Boolean(fieldErrors.endDate)"
-                :min="form.date || minDateTime"
-                type="datetime-local"
-              />
+              <div class="date-time-pair">
+                <UiTextInput
+                  id="event-end-date"
+                  v-model="form.endDate"
+                  :invalid="Boolean(fieldErrors.endDate)"
+                  :min="form.startDate || minDate"
+                  type="date"
+                />
+                <UiTextInput
+                  v-model="form.endTime"
+                  :invalid="Boolean(fieldErrors.endDate)"
+                  :min="minEndTime"
+                  type="time"
+                />
+              </div>
             </UiField>
 
             <UiField label="Ubicación" for-id="event-location">

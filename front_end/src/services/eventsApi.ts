@@ -58,7 +58,7 @@ async function fetchWithAuth(path: string, init: RequestInit = {}) {
   return response
 }
 
-export async function fetchEvents(options: Required<FetchEventsOptions>) {
+export async function fetchEvents(options: Required<Omit<FetchEventsOptions, 'status'>> & Pick<FetchEventsOptions, 'status'>) {
   const params = new URLSearchParams({
     page: String(options.page),
     limit: String(options.limit),
@@ -66,6 +66,10 @@ export async function fetchEvents(options: Required<FetchEventsOptions>) {
 
   if (options.search.trim()) {
     params.set('search', options.search.trim())
+  }
+
+  if (options.status) {
+    params.set('status', options.status)
   }
 
   const response = await fetchWithAuth(`/events/?${params.toString()}`)

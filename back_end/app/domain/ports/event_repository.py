@@ -21,7 +21,8 @@ class IEventRepository(ABC):
         self,
         search: Optional[str] = None,
         page: int = 1,
-        limit: int = 10
+        limit: int = 10,
+        status: Optional[str] = None
     ) -> tuple[list[Event], int]:
         """Retorna la lista paginada y el total de resultados."""
         ...
@@ -34,4 +35,10 @@ class IEventRepository(ABC):
     @abstractmethod
     def delete(self, event_id: UUID) -> None:
         """Elimina un evento por id."""
+        ...
+
+       
+    @abstractmethod
+    def count_by_creator(self, user_id: UUID) -> int:
+        """Retorna cuántos eventos ha creado un usuario."""
         ...

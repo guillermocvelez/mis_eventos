@@ -2,7 +2,6 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import EventsSidebar from '@/components/events/EventsSidebar.vue'
 import { UiBadge, UiButton, UiField, UiIcon, UiTextInput } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { type EventStatus, useEventsStore } from '@/stores/events'
@@ -17,16 +16,20 @@ const event = computed(() => eventsStore.selectedEvent)
 const form = reactive<{
   name: string
   description: string
-  date: string
+  startDate: string
+  startTime: string
   endDate: string
+  endTime: string
   location: string
   capacity: string
   status: EventStatus
 }>({
   name: '',
   description: '',
-  date: '',
+  startDate: '',
+  startTime: '',
   endDate: '',
+  endTime: '',
   location: '',
   capacity: '',
   status: 'draft',
@@ -56,15 +59,36 @@ const statusVariants: Record<EventStatus, 'danger' | 'info' | 'neutral' | 'succe
 }
 
 const canSubmit = computed(() => {
-  return Boolean(form.name.trim() && form.date && Number(form.capacity) > 0 && !isSubmitting.value)
+  return Boolean(
+    form.name.trim() &&
+    form.startDate &&
+    form.startTime &&
+    Number(form.capacity) > 0 &&
+    !isSubmitting.value,
+  )
 })
 
-const startsAtLabel = computed(() => formatPreviewDate(form.date))
-const endsAtLabel = computed(() => formatPreviewDate(form.endDate))
+const startDatetime = computed(() => {
+  if (!form.startDate || !form.startTime) return ''
+  return `${form.startDate}T${form.startTime}`
+})
+
+const endDatetime = computed(() => {
+  if (!form.endDate) return ''
+  return `${form.endDate}T${form.endTime || '23:59'}`
+})
+
+const startsAtLabel = computed(() => formatPreviewDate(startDatetime.value))
+const endsAtLabel = computed(() => formatPreviewDate(endDatetime.value))
 const capacityLabel = computed(() => {
   const capacity = Number(form.capacity)
   if (!capacity || capacity <= 0) return 'Sin cupo definido'
   return `${capacity} plazas disponibles`
+})
+
+const minEndTime = computed(() => {
+  if (form.endDate && form.endDate === form.startDate) return form.startTime
+  return ''
 })
 
 onMounted(() => {
@@ -95,8 +119,13 @@ watch(
 
     form.name = currentEvent.name
     form.description = currentEvent.description || ''
-    form.date = toInputDateTime(currentEvent.date)
-    form.endDate = currentEvent.end_date ? toInputDateTime(currentEvent.end_date) : ''
+    const startDT = toInputDateTime(currentEvent.date)
+    form.startDate = startDT.slice(0, 10)
+    form.startTime = startDT.slice(11, 16)
+
+    const endDT = currentEvent.end_date ? toInputDateTime(currentEvent.end_date) : ''
+    form.endDate = endDT.slice(0, 10)
+    form.endTime = endDT.slice(11, 16)
     form.location = currentEvent.location || ''
     form.capacity = String(currentEvent.capacity)
     form.status = currentEvent.status
@@ -150,16 +179,14 @@ function validateForm() {
     fieldErrors.name = 'Escribe el nombre del evento.'
   }
 
-  if (!form.date) {
+  if (!form.startDate || !form.startTime) {
     fieldErrors.date = 'Selecciona la fecha y hora de inicio.'
   }
 
-  if (
-    form.endDate &&
-    form.date &&
-    new Date(form.endDate).getTime() < new Date(form.date).getTime()
-  ) {
-    fieldErrors.endDate = 'La finalización debe ser posterior al inicio.'
+  if (form.endDate && startDatetime.value) {
+    if (new Date(endDatetime.value).getTime() < new Date(startDatetime.value).getTime()) {
+      fieldErrors.endDate = 'La finalización debe ser posterior al inicio.'
+    }
   }
 
   const capacity = Number(form.capacity)
@@ -179,8 +206,8 @@ async function submitEvent() {
     const updatedEvent = await eventsStore.updateEvent(eventId.value, {
       name: form.name.trim(),
       description: form.description.trim() || null,
-      date: toApiDate(form.date) || undefined,
-      end_date: toApiDate(form.endDate),
+      date: toApiDate(startDatetime.value) || undefined,
+      end_date: toApiDate(endDatetime.value),
       location: form.location.trim() || null,
       capacity: Number(form.capacity),
       status: form.status,
@@ -197,9 +224,7 @@ async function submitEvent() {
 </script>
 
 <template>
-  <div class="me-root events-app">
-    <EventsSidebar :event-count="eventsStore.total" />
-
+  <div class="me-root">
     <main class="events-main create-event-page">
       <section v-if="eventsStore.isDetailLoading" class="events-empty" aria-live="polite">
         <div class="empty-icon">
@@ -268,13 +293,24 @@ async function submitEvent() {
                 </select>
               </UiField>
 
-              <UiField label="Fecha y hora de inicio" :error="fieldErrors.date" for-id="event-date">
-                <UiTextInput
-                  id="event-date"
-                  v-model="form.date"
-                  :invalid="Boolean(fieldErrors.date)"
-                  type="datetime-local"
-                />
+              <UiField
+                label="Fecha y hora de inicio"
+                :error="fieldErrors.date"
+                for-id="event-start-date"
+              >
+                <div class="date-time-pair date-time-stack">
+                  <UiTextInput
+                    id="event-start-date"
+                    v-model="form.startDate"
+                    :invalid="Boolean(fieldErrors.date)"
+                    type="date"
+                  />
+                  <UiTextInput
+                    v-model="form.startTime"
+                    :invalid="Boolean(fieldErrors.date)"
+                    type="time"
+                  />
+                </div>
               </UiField>
 
               <UiField
@@ -282,13 +318,21 @@ async function submitEvent() {
                 :error="fieldErrors.endDate"
                 for-id="event-end-date"
               >
-                <UiTextInput
-                  id="event-end-date"
-                  v-model="form.endDate"
-                  :invalid="Boolean(fieldErrors.endDate)"
-                  :min="form.date"
-                  type="datetime-local"
-                />
+                <div class="date-time-pair date-time-stack">
+                  <UiTextInput
+                    id="event-end-date"
+                    v-model="form.endDate"
+                    :invalid="Boolean(fieldErrors.endDate)"
+                    :min="form.startDate"
+                    type="date"
+                  />
+                  <UiTextInput
+                    v-model="form.endTime"
+                    :invalid="Boolean(fieldErrors.endDate)"
+                    :min="minEndTime"
+                    type="time"
+                  />
+                </div>
               </UiField>
 
               <UiField label="Cupo" :error="fieldErrors.capacity" for-id="event-capacity">

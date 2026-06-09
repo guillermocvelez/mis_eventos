@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import Optional
-from sqlmodel import Session, select
+from sqlmodel import Session, select, col, func
 from app.domain.entities.event import Event, EventStatus
 from app.domain.ports.event_repository import IEventRepository
 from app.infrastructure.orm.models import EventORM
@@ -60,11 +60,19 @@ class SQLModelEventRepository(IEventRepository):
         self,
         search: Optional[str] = None,
         page: int = 1,
-        limit: int = 10
+        limit: int = 10,
+        status: Optional[str] = None
     ) -> tuple[list[Event], int]:
+
+        print(f"---------Status enviado: {status}")
         query = select(EventORM)
+
         if search:
-            query = query.where(EventORM.name.ilike(f"%{search}%"))
+            query = query.where(col(EventORM.name).ilike(f"%{search}%"))
+
+        if status:
+            query = query.filter(EventORM.status == status)
+
         total = len(self.db.exec(query).all())
         query = query.offset((page - 1) * limit).limit(limit)
         results = self.db.exec(query).all()
@@ -88,3 +96,8 @@ class SQLModelEventRepository(IEventRepository):
         orm = self.db.get(EventORM, event_id)
         self.db.delete(orm)
         self.db.commit()
+
+    def count_by_creator(self, user_id: UUID) -> int:
+        query = select(func.count()).select_from(EventORM).where(EventORM.created_by == user_id)
+        result = self.db.exec(query).one()
+        return int(result)

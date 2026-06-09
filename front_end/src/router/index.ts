@@ -62,6 +62,22 @@ const router = createRouter({
       },
     },
     {
+      path: '/perfil',
+      name: 'profile',
+      component: () => import('@/views/profile/ProfileView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/perfil/sin-registros',
+      name: 'profile-empty',
+      component: () => import('@/views/profile/ProfileView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/auth/LoginView.vue'),
