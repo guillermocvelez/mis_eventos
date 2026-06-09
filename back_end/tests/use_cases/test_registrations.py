@@ -20,7 +20,7 @@ from app.application.use_cases.registrations.register_to_event import (
 from app.application.use_cases.registrations.register_to_session import (
     RegisterToSessionUseCase,
 )
-from app.domain.entities.event import Event
+from app.domain.entities.event import Event, EventStatus
 from app.domain.entities.session import EventSession
 from app.domain.exceptions import (
     AlreadyRegistered,
@@ -49,6 +49,7 @@ def make_event(**kwargs):
         "end_date": future(hour=20),
         "capacity": 10,
         "registered_count": 0,
+        "status": EventStatus.published,
         "created_by": uuid4(),
         "created_at": datetime.now(timezone.utc),
     }

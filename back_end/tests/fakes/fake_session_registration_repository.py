@@ -41,7 +41,7 @@ class FakeSessionRegistrationRepository(ISessionRegistrationRepository):
                 id=session.id,
                 event_id=session.event_id,
                 title=session.title,
-                speaker=None,
+                speaker_id=session.speaker_id,
                 start_time=session.start_time,
                 end_time=session.end_time,
                 capacity=session.capacity,
