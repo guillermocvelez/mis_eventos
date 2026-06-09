@@ -1,15 +1,19 @@
-import { describe, it, expect } from 'vitest'
-
+import { createPinia } from 'pinia'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
+
 import App from '../App.vue'
+
+vi.mock('vue-router', () => ({
+  RouterView: { template: '<main data-test="router-view" />' },
+  useRoute: () => ({ meta: {} }),
+}))
 
 describe('App', () => {
   it('mounts renders properly', () => {
     const wrapper = mount(App, {
       global: {
-        stubs: {
-          RouterView: { template: '<main data-test="router-view" />' },
-        },
+        plugins: [createPinia()],
       },
     })
 
